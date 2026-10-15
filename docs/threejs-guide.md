@@ -61,3 +61,22 @@ Three.js cuida da representação 3D; as regras dos modos distância e infinito 
 Nas semanas 1 e 2, priorizem as etapas 1 a 3; nas semanas 3 a 6, avancem pelas etapas 4 a 7 conforme as entregas. Ao encontrar uma tela vazia, consultem primeiro o console e a rede do navegador; depois verifiquem se a câmera aponta para os objetos, se eles estão dentro dos planos visíveis e se os recursos foram carregados. Se um objeto estiver preto ou invisível, confiram material e iluminação. Se a cena parecer esticada, confiram tamanho do renderer e proporção da câmera.
 
 Mantenham uma pequena demonstração funcional após cada exercício. Ela serve tanto para aprender quanto para comprovar o avanço semanal do projeto.
+
+## Referências para consulta
+
+Estas páginas são da documentação oficial do Three.js. Sigam a ordem da tabela para o primeiro contato; depois usem a coluna **Quando consultar** para localizar uma dúvida específica. As páginas de manual ensinam conceitos com exemplos, enquanto as referências de API detalham propriedades e métodos.
+
+| Ordem | Referência | Quando consultar |
+| --- | --- | --- |
+| 1 | [Instalação](https://threejs.org/manual/pages/installation.html) | Escolher npm/Vite ou CDN e configurar o servidor local. |
+| 2 | [Fundamentos](https://threejs.org/manual/pages/fundamentals.html) | Entender cena, objetos, malhas, materiais e renderização. |
+| 3 | [Criando uma cena](https://threejs.org/manual/pages/creating-a-scene.html) | Montar a primeira câmera, o renderer e o ciclo de animação. |
+| 4 | [Hierarquia da cena](https://threejs.org/manual/pages/scenegraph.html) | Agrupar partes e posicionar personagens e obstáculos. |
+| 5 | [Design responsivo](https://threejs.org/manual/pages/responsive.html) | Ajustar canvas e projeção após mudanças de tamanho. |
+| 6 | [Câmeras](https://threejs.org/manual/pages/cameras.html) e [`PerspectiveCamera`](https://threejs.org/docs/pages/PerspectiveCamera.html) | Criar e ajustar as duas vistas em perspectiva. |
+| 7 | [Luzes](https://threejs.org/manual/pages/lights.html), [texturas](https://threejs.org/manual/pages/textures.html) e [sombras](https://threejs.org/manual/pages/shadows.html) | Cumprir os requisitos visuais e investigar aparência ou desempenho. |
+| 8 | [Carregando modelos 3D](https://threejs.org/manual/pages/loading-3d-models.html) e [`GLTFLoader`](https://threejs.org/docs/pages/GLTFLoader.html) | Importar personagens em glTF/GLB e resolver falhas de carregamento. |
+| 9 | [Sistema de animação](https://threejs.org/manual/pages/animation-system.html) e [`AnimationMixer`](https://threejs.org/docs/pages/AnimationMixer.html) | Reproduzir corrida, salto e animações do robô. |
+| 10 | [Criando um jogo](https://threejs.org/manual/pages/game.html) | Estudar uma integração maior depois que a cena básica funcionar. |
+
+Se um exemplo da internet divergir dessas páginas, verifiquem a versão de Three.js usada pelo projeto antes de adaptá-lo. Para investigar um objeto específico, pesquisem seu nome na [referência de API](https://threejs.org/docs/) e confiram os parâmetros e métodos da versão instalada.
