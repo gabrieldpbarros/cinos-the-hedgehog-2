@@ -7,6 +7,7 @@
     "doc": "docs"
   },
   "scripts": {
+    "build": "npx vite build --base=/cinos-the-hedgehog-2/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
