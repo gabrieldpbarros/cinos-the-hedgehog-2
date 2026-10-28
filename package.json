@@ -8,6 +8,8 @@
   },
   "scripts": {
     "build": "npx vite build --base=/cinos-the-hedgehog-2/",
+    "dev": "vite --port 3001",
+    "bun-dev": "bunx --bun vite --port 3001",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
