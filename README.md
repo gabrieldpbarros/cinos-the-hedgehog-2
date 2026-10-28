@@ -16,29 +16,10 @@ Clone o repositório e vá para o diretório raiz do projeto:
 
 ```bash
 $ git clone -b main git@github.com:gabrieldpbarros/cinos-the-hedgehog-2.git [NOME_DA_PASTA]
-$ cd cinos-the-hedgehog-2
-# OU
-# $ cd <NOME_DA_PASTA>
+$ cd cinos-the-hedgehog-2 # OU <NOME_DA_PASTA>
 ```
 
-### `init_project.sh`
-
-Rode o script de inicialização do projeto:
-
-#### **Linux**
-
-```bash
-$ chmod +x init_project.sh
-$ ./init_project.sh
-```
-
-#### **Windows**
-
-```bash
-$ bash init_project.sh
-```
-
-### Manual
+### Instalar dependencias
 
 Execute o(s) comando(s):
 

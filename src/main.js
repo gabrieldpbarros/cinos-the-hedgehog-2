@@ -1,8 +1,42 @@
-import { CanvasResizer } from './canvas/resizer.js'
+import * as THREE from 'three';
+import { Game } from './game/Game.js';
+import { Input } from './game/Input.js';
+import { SceneView } from './rendering/SceneView.js';
 
-const canvas = document.getElementById("canvas");
-const gl = canvas.getContext("webgl2");
+const canvas = document.getElementById('canvas');
+const widthText = document.getElementById('width');
+const heightText = document.getElementById('height');
 
-if (!gl) throw new Error("WebGL2 não é suportado.");
+function updateSizeLabels() {
+  if (widthText) widthText.textContent = window.innerWidth;
+  if (heightText) heightText.textContent = window.innerHeight;
+}
 
-const canvasResizer = new CanvasResizer(canvas);
+const game = new Game();
+const input = new Input();
+const view = new SceneView(canvas);
+
+input.attach(window);
+
+// Optional: switch camera with "C"
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyC') view.switchCamera();
+});
+
+window.addEventListener('resize', () => {
+  view.resize(window.innerWidth, window.innerHeight);
+  updateSizeLabels();
+});
+
+updateSizeLabels();
+
+const clock = new THREE.Clock();
+
+function loop() {
+  requestAnimationFrame(loop);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  game.update(dt, input);
+  view.sync(game.getSnapshot());
+  view.render();
+}
+loop();
