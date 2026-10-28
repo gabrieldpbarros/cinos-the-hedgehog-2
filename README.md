@@ -7,7 +7,7 @@
 - [Davi Santos](https://github.com/davi-ssantos);
 - [Felipe Estevanatto](https://github.com/FelipeEstevanatto);
 - [Gabriel Delgado](https://github.com/gabrieldpbarros);
-- [Guilherme Seyfart]();
+- [Guilherme Seyfart](https://github.com/gui247);
 - [João Vitor Gomes](https://github.com/jvmgomes);
 
 ## Guia de instalação
