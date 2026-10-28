@@ -4,7 +4,7 @@ Este roteiro complementa [as diretrizes do jogo](guidelines.md). A proposta é a
 
 ## 1. Preparar o ambiente
 
-Leiam a [instalação oficial](https://threejs.org/manual/pages/installation.html) e escolham **uma** forma de usar a biblioteca. Para um projeto em grupo, a opção recomendada pela documentação é instalar Three.js com npm e uma ferramenta de desenvolvimento como Vite; isso registra dependências e facilita importações. CDN com *import map* também funciona para um começo pequeno, desde que biblioteca e complementos usem a mesma versão. Anotem a escolha e os comandos reais de execução no README quando configurarem o projeto. Hoje o repositório ainda não tem `package.json` nem processo de build.
+Leiam a [instalação oficial](https://threejs.org/manual/pages/installation.html) para entender o ambiente. O grupo já escolheu npm e instalou Three.js e Vite; `package.json` e `package-lock.json` estão no repositório. Quando houver um comando para executar o jogo, documentem-no no README. Para instalar as dependências de uma cópia nova do projeto, usem `npm ci` na raiz.
 
 **Exercício:** abrir o projeto por um servidor local e verificar no console que todos os módulos carregaram. Evitem abrir `index.html` diretamente como arquivo, especialmente quando começarem a carregar modelos e texturas.
 

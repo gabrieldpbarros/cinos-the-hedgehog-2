@@ -10,13 +10,13 @@ O escopo mínimo é uma pista, um comando de salto, dois tipos de obstáculo, um
 
 | Tema | Diretriz |
 | --- | --- |
-| Tecnologia | Preferir Three.js, permitido pela especificação, para concentrar o trabalho no jogo e nos conceitos gráficos. Confirmar com o professor apenas se houver expectativa específica de WebGL puro. O protótipo atual inicializa WebGL2, mas ainda não contém mecânicas a preservar. |
+| Tecnologia | Three.js e Vite já estão declarados no `package.json`. O `src/main.js` atual ainda é um protótipo WebGL2; substituir sua inicialização ao criar a cena Three.js. |
 | Primeira versão | Começar com uma cena 3D simples. A movimentação pode ficar restrita a avanço e salto, mantendo a lógica enxuta sem criar uma implementação 2D separada. |
 | Mundo | Adotar uma convenção única: X representa o avanço, Y a altura e Z a profundidade. Registrar unidades e velocidades em um só lugar. |
 | Personagens | Criar um protagonista e um robô com silhuetas reconhecíveis, múltiplas partes e ao menos animações essenciais. Espinhos são obstáculos, não contam como personagem complexo. |
 | Câmeras | Usar uma câmera lateral em perspectiva durante o jogo e oferecer outra posição, por exemplo em três quartos, selecionável pelo jogador. Ambas precisam mostrar profundidade de forma perceptível. |
 | Iluminação e materiais | Usar ao menos duas fontes de luz com funções visuais distintas e mais de uma textura aplicada a objetos da cena. Testar a legibilidade dos obstáculos sob ambas as câmeras. |
-| Recursos | Guardar modelos, texturas e sons em `assets/`. Registrar autoria e licença de recursos externos; preferir arte própria ou com permissão clara, especialmente para personagens inspirados em franquias existentes. |
+| Recursos | Guardar arquivos carregados por URL em `public/assets/`, para que o Vite os inclua na versão final. Criar subpastas quando houver arquivos. Registrar autoria e licença de recursos externos; preferir arte própria ou com permissão clara, especialmente para personagens inspirados em franquias existentes. |
 
 ## Modos e regras compartilhadas
 
@@ -31,21 +31,18 @@ Definir estados explícitos de menu, partida, pausa, vitória e derrota. Uma tra
 ## Organização sugerida
 
 ```text
+index.html        página e canvas
+package.json      dependências e futuros comandos npm
+package-lock.json versões instaladas pelo grupo
 src/
-  main.js          inicialização e ligação entre sistemas
-  game/            estado, modos, pontuação, dificuldade e colisões
-  entities/        jogador, robô e obstáculos
-  input/           comandos do jogador
-  rendering/       cena, câmeras, luzes, modelos e animação visual
-  ui/              menu, placar e telas de fim
-assets/
-  models/          personagens e objetos 3D
-  textures/        texturas da pista, cenário e personagens
-  audio/           sons opcionais
-docs/             decisões, planejamento e evidências das entregas
+  main.js         inicialização e ligação entre sistemas
+  game/           regras: estado, modos, movimento, entrada e colisões
+  rendering/      cena Three.js, câmeras, luzes e objetos visuais
+public/assets/    modelos, texturas e sons carregados por URL
+docs/            decisões, planejamento e evidências das entregas
 ```
 
-Separar as **regras** da **apresentação**: posição, velocidade, salto, colisão e pontuação pertencem ao jogo; malhas, materiais, luzes e câmeras representam esse estado. Classes são úteis para entidades com comportamento próprio, mas evitar heranças profundas ou uma classe para cada detalhe. Manter `main.js` pequeno e evitar que regras dependam de elementos HTML ou objetos da biblioteca gráfica.
+Esta é uma estrutura **incremental**: criar `game/`, `rendering/` e `public/assets/` somente quando houver arquivos para colocar nelas. Não há necessidade de diretórios separados para entidades, entrada e interface enquanto cada parte couber em poucos módulos. Separar as **regras** da **apresentação**: posição, velocidade, salto, colisão e pontuação pertencem ao jogo; malhas, materiais, luzes e câmeras representam esse estado. Classes são úteis para entidades com comportamento próprio, mas evitar heranças profundas ou uma classe para cada detalhe. Manter `main.js` pequeno e evitar que regras dependam de elementos HTML ou objetos da biblioteca gráfica. O [guia do Vite](https://vite.dev/guide/assets.html#the-public-directory) explica o uso de `public/` para arquivos referenciados diretamente por URL.
 
 ## Trilha de oito semanas
 
