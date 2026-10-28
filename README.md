@@ -15,7 +15,7 @@
 Clone o repositório e vá para o diretório raiz do projeto:
 
 ```bash
-$ git clone -b main git@github.com:gabrieldpbarros/cinos-the-hedgehog-2.git <(opcional)NOME_DA_PASTA>
+$ git clone -b main git@github.com:gabrieldpbarros/cinos-the-hedgehog-2.git [NOME_DA_PASTA]
 $ cd cinos-the-hedgehog-2
 # OU
 # $ cd <NOME_DA_PASTA>
