@@ -1,8 +1,7 @@
-import { CanvasResizer } from './canvas/resizer.js'
+import { CanvasResizer } from './canvas/resizer.js';
 
-const canvas = document.getElementById("canvas");
-const gl = canvas.getContext("webgl2");
+const canvas = document.getElementById('canvas');
 
-if (!gl) throw new Error("WebGL2 não é suportado.");
+new CanvasResizer(renderer, camera);
 
-const canvasResizer = new CanvasResizer(canvas);
+renderer.setAnimationLoop(() => renderer.render(scene, camera));

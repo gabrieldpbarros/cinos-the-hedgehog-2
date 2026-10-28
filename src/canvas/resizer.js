@@ -1,35 +1,25 @@
 export class CanvasResizer {
-    constructor(canvas) {
-        this.canvas = canvas;
-
+    constructor(renderer, camera) {
+        this.renderer = renderer;
+        this.camera = camera;
         window.addEventListener('resize', this);
         this.widthText = document.getElementById('width');
-        this.heightText = document.getElementById("height");
-
-        this.setInitialSize();
+        this.heightText = document.getElementById('height');
+        this.resize();
     }
 
-    setInitialSize() {
-        this.canvas.height = window.innerHeight;
-        this.canvas.width = window.innerWidth;
-
-        // visualizacao
-        this.heightText.textContent = this.canvas.height;
-        this.widthText.textContent = this.canvas.width;
+    handleEvent() {
+        this.resize();
     }
 
-    handleEvent(event) {
-        switch (event.type) {
-            case 'resize':
-                this.canvas.height = window.innerHeight;
-                this.canvas.width = window.innerWidth;
+    resize() {
+        const canvas = this.renderer.domElement;
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        if (width === 0 || height === 0) return;
 
-                // visualizacao
-                this.heightText.textContent = this.canvas.height;
-                this.widthText.textContent = this.canvas.width;
-                break;
-            default:
-                break;
-        }
+        this.renderer.setSize(width, height, false);
+        this.camera.aspect = width / height;
+        this.camera.updateProjectionMatrix();
     }
 }
