@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Game } from './game/Game.js';
 import { Input } from './game/Input.js';
 import { SceneView } from './rendering/SceneView.js';
+import { CONFIG } from './game/constants.js';
 
 const canvas = document.getElementById('canvas');
 const widthText = document.getElementById('width');
@@ -34,7 +35,7 @@ const clock = new THREE.Clock();
 
 function loop() {
   requestAnimationFrame(loop);
-  const dt = Math.min(clock.getDelta(), 0.05);
+  const dt = Math.min(clock.getDelta(), CONFIG.maxDt);
   game.update(dt, input);
   view.sync(game.getSnapshot());
   view.render();

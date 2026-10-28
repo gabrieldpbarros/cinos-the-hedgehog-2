@@ -1,5 +1,4 @@
 import { Player } from './Player.js';
-import { CONFIG } from './constants.js';
 
 export class Game {
   constructor() {
