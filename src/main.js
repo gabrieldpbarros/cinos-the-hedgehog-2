@@ -31,10 +31,11 @@ window.addEventListener('resize', () => {
 
 updateSizeLabels();
 
-const clock = new THREE.Clock();
+const clock = new THREE.Timer();
 
 function loop() {
   requestAnimationFrame(loop);
+  clock.update();
   const dt = Math.min(clock.getDelta(), CONFIG.maxDt);
   game.update(dt, input);
   view.sync(game.getSnapshot());
