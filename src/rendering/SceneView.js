@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createGround } from './ground.js';
 
 export class SceneView {
   constructor(canvas) {
@@ -25,13 +26,19 @@ export class SceneView {
     sun.position.set(5, 10, 5);
     this.scene.add(sun);
 
-    // Ground
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(200, 20),
-      new THREE.MeshStandardMaterial({ color: 0x3a7d44 })
+    // Skybox
+    this.skybox_loader = new THREE.TextureLoader();
+    this.skybox_texture = this.skybox_loader.load(
+      `${import.meta.env.BASE_URL}assets/temp_skybox.png`,
+      () => {
+        this.skybox_texture.mapping = THREE.EquirectangularReflectionMapping;
+        this.skybox_texture.colorSpace = THREE.SRGBColorSpace;
+        this.scene.background = this.skybox_texture;
+      }
     );
-    ground.rotation.x = -Math.PI / 2;
-    this.scene.add(ground);
+
+    // Ground
+    this.scene.add(createGround());
 
     // Player mesh
     this.playerMesh = new THREE.Mesh(
