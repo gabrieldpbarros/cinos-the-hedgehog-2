@@ -11,7 +11,7 @@ Para construir um chunk, devem ser definidos a coordenada X global de início (`
 
 A classe guarda a `Mesh` final após sua criação e calcula a distância acumulada até o fim da superfície: `surfaceEnd = surfaceStart + Math.hypot(length, rise)`, em que `rise` é a diferença de altura entre as extremidades.
 > [!NOTE]
-> Enquanto não 
+> Enquanto não foi implementado um chunk curvo, o uso da hipotenusa é suficiente para o cálculo.
 
 ## Criação do chunk
 
