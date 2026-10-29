@@ -81,17 +81,14 @@ export class Chunk {
     // SUPERIOR (+Y)
     face(
       [[0, leftHeight, -halfDepth], [length, rightHeight, -halfDepth], [length, rightHeight, halfDepth], [0, leftHeight, halfDepth]],
-      [top(this.surfaceStart, -halfDepth), top(this.surfaceEnd, -halfDepth),
-        top(this.surfaceEnd, halfDepth), top(this.surfaceStart, halfDepth)],
+      [top(this.surfaceStart, -halfDepth), top(this.surfaceEnd, -halfDepth), top(this.surfaceEnd, halfDepth), top(this.surfaceStart, halfDepth)],
       1
     );
 
     // INFERIOR (-Y)
     face(
-      [[0, bottom, -halfDepth], [length, bottom, -halfDepth],
-        [length, bottom, halfDepth], [0, bottom, halfDepth]],
-      [soilSide(0, -halfDepth), soilSide(length, -halfDepth),
-        soilSide(length, halfDepth), soilSide(0, halfDepth)],
+      [[0, bottom, -halfDepth], [length, bottom, -halfDepth], [length, bottom, halfDepth], [0, bottom, halfDepth]],
+      [soilSide(0, -halfDepth), soilSide(length, -halfDepth), soilSide(length, halfDepth), soilSide(0, halfDepth)],
       0
     );
     // =================================================================================================================

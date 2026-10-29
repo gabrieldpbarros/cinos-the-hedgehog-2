@@ -10,6 +10,10 @@
 - [Guilherme Seyfart](https://github.com/gui247);
 - [João Vitor Gomes](https://github.com/jvmgomes);
 
+### Link público
+
+https://gabrieldpbarros.github.io/cinos-the-hedgehog-2/
+
 ## Guia de instalação
 
 Clone o repositório e vá para o diretório raiz do projeto:
