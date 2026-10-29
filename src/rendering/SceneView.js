@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createGround } from './ground.js';
 
 export class SceneView {
   constructor(canvas) {
@@ -26,12 +27,7 @@ export class SceneView {
     this.scene.add(sun);
 
     // Ground
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(200, 20),
-      new THREE.MeshStandardMaterial({ color: 0x3a7d44 })
-    );
-    ground.rotation.x = -Math.PI / 2;
-    this.scene.add(ground);
+    this.scene.add(createGround());
 
     // Player mesh
     this.playerMesh = new THREE.Mesh(
