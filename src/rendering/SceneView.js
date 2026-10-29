@@ -26,6 +26,17 @@ export class SceneView {
     sun.position.set(5, 10, 5);
     this.scene.add(sun);
 
+    // Skybox
+    this.skybox_loader = new THREE.TextureLoader();
+    this.skybox_texture = this.skybox_loader.load(
+      `${import.meta.env.BASE_URL}assets/temp_skybox.png`,
+      () => {
+        this.skybox_texture.mapping = THREE.EquirectangularReflectionMapping;
+        this.skybox_texture.colorSpace = THREE.SRGBColorSpace;
+        this.scene.background = this.skybox_texture;
+      }
+    );
+
     // Ground
     this.scene.add(createGround());
 
