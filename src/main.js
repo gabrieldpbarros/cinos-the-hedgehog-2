@@ -1,36 +1,25 @@
 import * as THREE from 'three';
 import { Game } from './game/Game.js';
 import { Input } from './game/Input.js';
-import { SceneView } from './rendering/SceneView.js';
 import { CONFIG } from './game/constants.js';
 
 const canvas = document.getElementById('canvas');
-const widthText = document.getElementById('width');
-const heightText = document.getElementById('height');
 
-function updateSizeLabels() {
-  if (widthText) widthText.textContent = window.innerWidth;
-  if (heightText) heightText.textContent = window.innerHeight;
-}
-
-const game = new Game();
+const game = new Game(canvas);
 const input = new Input();
-const view = new SceneView(canvas);
 
 input.attach(window);
 
 // Optional: switch camera with "C"
 window.addEventListener('keydown', (e) => {
-  if (e.code === 'KeyC') view.switchCamera();
+  if (e.code === 'KeyC') game.switchCamera();
 });
 
 window.addEventListener('resize', () => {
-  view.resize(window.innerWidth, window.innerHeight);
-  updateSizeLabels();
+  game.resizeWindow(window.innerWidth, window.innerHeight);
 });
 
-updateSizeLabels();
-
+game.startGame();
 const clock = new THREE.Timer();
 
 function loop() {
@@ -38,7 +27,5 @@ function loop() {
   clock.update();
   const dt = Math.min(clock.getDelta(), CONFIG.maxDt);
   game.update(dt, input);
-  view.sync(game.getSnapshot());
-  view.render();
 }
 loop();
