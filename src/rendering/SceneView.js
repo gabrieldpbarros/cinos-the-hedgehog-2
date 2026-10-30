@@ -79,7 +79,8 @@ export class SceneView {
   }
 
   loadSonic() {
-    new GLTFLoader().load(
+    if (!this.loader) this.loader = new GLTFLoader();
+    this.loader.load(
       `${import.meta.env.BASE_URL}model-imports/sonic-hd/scene.gltf`,
       (gltf) => {
         const sonic = gltf.scene;
