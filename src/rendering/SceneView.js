@@ -40,20 +40,44 @@ export class SceneView {
     // Ground
     this.scene.add(createGround());
 
-    // Player mesh
-    this.playerMesh = new THREE.Mesh(
-      new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshStandardMaterial({ color: 0x1e90ff })
+    // Player mesh (model + hitbox)
+    this.playerHB = new THREE.Mesh(
+      new THREE.BoxGeometry(1.1, 1.1, 1.1),
+      new THREE.MeshStandardMaterial({ 
+        color: 0xffffff, 
+        transparent: true,
+        opacity: 0
+      })
     );
-    this.scene.add(this.playerMesh);
+    this.playerModel = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.MeshStandardMaterial({
+        color: 0x1e90ff
+      })
+    );
+    this.playerHB.add(this.playerModel);
+    //this.playerhb_box = new THREE.BoxHelper(this.playerHB);
+    this.scene.add(this.playerHB);
+    //this.scene.add(this.playerhb_box);
 
-    // Enemy mesh
-    this.enemyMesh = new THREE.Mesh(
+    // Enemy mesh (model + hitbox)
+    this.enemyHB = new THREE.Mesh(
+      new THREE.BoxGeometry(1.1, 1.1, 1.1),
+      new THREE.MeshStandardMaterial({
+        color: 0xffffff, 
+        transparent: true,
+        opacity: 0
+      })
+    )
+    this.enemyModel = new THREE.Mesh(
       new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshStandardMaterial({ color: 0xff4500 })
+      new THREE.MeshStandardMaterial({
+        color: 0xff4500
+      })
     );
-    this.enemyMesh.position.set(8, 0.5, 0);
-    this.scene.add(this.enemyMesh);
+    this.enemyHB.add(this.enemyModel);
+    this.enemyHB.position.set(10, 0.5, 0);
+    this.scene.add(this.enemyHB);
 
     this.resize(window.innerWidth, window.innerHeight);
   }
@@ -75,7 +99,8 @@ export class SceneView {
 
   sync(gameSnapshot) {
     const p = gameSnapshot.player;
-    this.playerMesh.position.set(p.x, p.y, p.z);
+    this.playerHB.position.set(p.x, p.y, p.z);
+    //this.playerhb_box.update();
 
     // Keep side camera following player on X
     this.cameras.side.position.x = p.x;
