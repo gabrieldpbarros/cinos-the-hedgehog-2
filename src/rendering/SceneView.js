@@ -1,5 +1,9 @@
 import * as THREE from 'three';
 import { createGround } from './ground.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+
+// Instanciar o loader de modelo 3D
+const loader = new GLTFLoader();
 
 export class SceneView {
   constructor(canvas) {
@@ -41,11 +45,34 @@ export class SceneView {
     this.scene.add(createGround());
 
     // Player mesh
+    // Carrega a caixa do player antes de carregar o modelo
     this.playerMesh = new THREE.Mesh(
       new THREE.BoxGeometry(1, 1, 1),
       new THREE.MeshStandardMaterial({ color: 0x1e90ff })
     );
+
     this.scene.add(this.playerMesh);
+
+    loader.load('/model-imports/sonic-hd/scene.gltf',
+      (gltf) => {
+        const sonic = gltf.scene;
+
+        sonic.scale.set(1, 1, 1);
+        sonic.position.copy(this.playerMesh.position);
+
+        // Animações do modelo serão inseridas aqui
+
+        this.scene.remove(this.playerMesh);
+        this.playerMesh = sonic;
+        this.scene.add(this.playerMesh);
+      },
+      (xhr) => {
+        console.log((xhr.loaded / xhr.total * 100) + '% carregado');
+      },
+      (error) => {
+        console.error('Erro ao carregar o modelo:', error);
+      }
+    );
 
     // Enemy mesh
     this.enemyMesh = new THREE.Mesh(
