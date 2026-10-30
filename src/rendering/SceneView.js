@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { createGround } from './ground.js';
 
 export class SceneView {
@@ -40,12 +41,15 @@ export class SceneView {
     // Ground
     this.scene.add(createGround());
 
-    // Player mesh
+    // Player mesh (cubo usado como fallback e como "pai" do modelo do Sonic)
     this.playerMesh = new THREE.Mesh(
       new THREE.BoxGeometry(1, 1, 1),
       new THREE.MeshStandardMaterial({ color: 0x1e90ff })
     );
     this.scene.add(this.playerMesh);
+
+    // Carrega o modelo do Sonic (assíncrono)
+    this.loadSonic();
 
     // Enemy mesh
     this.enemyMesh = new THREE.Mesh(
@@ -56,6 +60,33 @@ export class SceneView {
     this.scene.add(this.enemyMesh);
 
     this.resize(window.innerWidth, window.innerHeight);
+  }
+
+  loadSonic() {
+    new GLTFLoader().load(
+      `${import.meta.env.BASE_URL}model-imports/sonic-hd/scene.gltf`,
+      (gltf) => {
+        const sonic = gltf.scene;
+
+        // Escala o modelo para ~1 unidade de altura (igual ao cubo)
+        const box = new THREE.Box3().setFromObject(sonic);
+        const size = box.getSize(new THREE.Vector3());
+        sonic.scale.setScalar(1 / size.y);
+
+        // Recalcula a caixa já escalada e apoia os pés na base do cubo
+        box.setFromObject(sonic);
+        sonic.position.y = -box.min.y - 0.5;
+
+        // Se ele aparecer de lado/costas, descomente e teste outros valores:
+        // sonic.rotation.y = Math.PI / 2;
+
+        // Esconde o cubo e pendura o Sonic nele (herda a posição do sync)
+        this.playerMesh.material.visible = false;
+        this.playerMesh.add(sonic);
+      },
+      undefined,
+      (err) => console.error('Erro ao carregar o Sonic:', err)
+    );
   }
 
   resize(w, h) {
