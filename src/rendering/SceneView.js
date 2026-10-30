@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { createGround } from './ground.js';
 
 export class SceneView {
@@ -40,22 +41,66 @@ export class SceneView {
     // Ground
     this.scene.add(createGround());
 
-    // Player mesh
-    this.playerMesh = new THREE.Mesh(
-      new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshStandardMaterial({ color: 0x1e90ff })
+    // Player mesh (model + hitbox)
+    this.playerHB = new THREE.Mesh(
+      new THREE.BoxGeometry(0.7, 0.8, 0.6),
+      new THREE.MeshStandardMaterial({ 
+        color: 0xffffff, 
+        transparent: true,
+        opacity: 0
+      })
     );
-    this.scene.add(this.playerMesh);
+    // Carrega o modelo do Sonic (assíncrono)
+    this.loadSonic();
+    //this.playerhb_box = new THREE.BoxHelper(this.playerHB);
+    this.scene.add(this.playerHB);
+    //this.scene.add(this.playerhb_box);
 
-    // Enemy mesh
-    this.enemyMesh = new THREE.Mesh(
+    // Enemy mesh (model + hitbox)
+    this.enemyHB = new THREE.Mesh(
+      new THREE.BoxGeometry(1.1, 1.1, 1.1),
+      new THREE.MeshStandardMaterial({
+        color: 0xffffff, 
+        transparent: true,
+        opacity: 0
+      })
+    )
+    this.enemyModel = new THREE.Mesh(
       new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshStandardMaterial({ color: 0xff4500 })
+      new THREE.MeshStandardMaterial({
+        color: 0xff4500
+      })
     );
-    this.enemyMesh.position.set(8, 0.5, 0);
-    this.scene.add(this.enemyMesh);
+    this.enemyHB.add(this.enemyModel);
+    this.enemyHB.position.set(10, 0.5, 0);
+    this.scene.add(this.enemyHB);
 
     this.resize(window.innerWidth, window.innerHeight);
+  }
+
+  loadSonic() {
+    if (!this.loader) this.loader = new GLTFLoader();
+    this.loader.load(
+      `${import.meta.env.BASE_URL}model-imports/sonic-hd/scene.gltf`,
+      (gltf) => {
+        const sonic = gltf.scene;
+
+        // Escala o modelo para ~1 unidade de altura (igual ao cubo)
+        const box = new THREE.Box3().setFromObject(sonic);
+        const size = box.getSize(new THREE.Vector3());
+        sonic.scale.setScalar(1.5 / size.y);
+
+        // Recalcula a caixa já escalada e apoia os pés na base do cubo
+        box.setFromObject(sonic);
+        sonic.position.y = -box.min.y - 0.5;
+        sonic.rotation.y = Math.PI / 2;
+
+        // Esconde o cubo e pendura o Sonic nele (herda a posição do sync)
+        this.playerHB.add(sonic);
+      },
+      undefined,
+      (err) => console.error('Erro ao carregar o Sonic:', err)
+    );
   }
 
   resize(w, h) {
@@ -75,7 +120,8 @@ export class SceneView {
 
   sync(gameSnapshot) {
     const p = gameSnapshot.player;
-    this.playerMesh.position.set(p.x, p.y, p.z);
+    this.playerHB.position.set(p.x, p.y, p.z);
+    //this.playerhb_box.update();
 
     // Keep side camera following player on X
     this.cameras.side.position.x = p.x;
