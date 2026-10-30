@@ -27,3 +27,6 @@
 * **Física por Parametrização Dupla:** Implementar a lógica que checa a posição do personagem em relação ao chão a cada quadro. Caso ele mude de bloco ou toque no solo, a sua altura $Y$ é atualizada de forma instantânea para o topo exato daquele bloco de chão.
 * **Rotação por Vetor Normal:** Configurar o alinhamento de rotação do Sonic nas subidas e descidas, fazendo com que o corpo do personagem se incline de forma correta utilizando o vetor normal da superfície da rampa atual.
 * **Interface do Usuário (HUD):** Programar o contador de anéis e o painel de distância percorrida conectando as variáveis à estrutura `<div id="hud">` do HTML.
+
+### Modelo 3d
+* **Link da referência do modelo 3d:** https://sketchfab.com/3d-models/sonic-hd-c23cead36d9349988a4981b92eabf208
