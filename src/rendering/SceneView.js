@@ -41,34 +41,21 @@ export class SceneView {
     // Ground
     this.scene.add(createGround());
 
-<<<<<<< HEAD
     // Player mesh (model + hitbox)
     this.playerHB = new THREE.Mesh(
-      new THREE.BoxGeometry(1.1, 1.1, 1.1),
+      new THREE.BoxGeometry(0.7, 0.8, 0.6),
       new THREE.MeshStandardMaterial({ 
         color: 0xffffff, 
         transparent: true,
         opacity: 0
       })
-=======
-    // Player mesh (cubo usado como fallback e como "pai" do modelo do Sonic)
-    this.playerMesh = new THREE.Mesh(
-      new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshStandardMaterial({ color: 0x1e90ff })
->>>>>>> c1f2735312c52c2d2645dc74d5343c7acfe57386
     );
-    this.playerModel = new THREE.Mesh(
-      new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshStandardMaterial({
-        color: 0x1e90ff
-      })
-    );
-    this.playerHB.add(this.playerModel);
+    // Carrega o modelo do Sonic (assíncrono)
+    this.loadSonic();
     //this.playerhb_box = new THREE.BoxHelper(this.playerHB);
     this.scene.add(this.playerHB);
     //this.scene.add(this.playerhb_box);
 
-<<<<<<< HEAD
     // Enemy mesh (model + hitbox)
     this.enemyHB = new THREE.Mesh(
       new THREE.BoxGeometry(1.1, 1.1, 1.1),
@@ -79,13 +66,6 @@ export class SceneView {
       })
     )
     this.enemyModel = new THREE.Mesh(
-=======
-    // Carrega o modelo do Sonic (assíncrono)
-    this.loadSonic();
-
-    // Enemy mesh
-    this.enemyMesh = new THREE.Mesh(
->>>>>>> c1f2735312c52c2d2645dc74d5343c7acfe57386
       new THREE.BoxGeometry(1, 1, 1),
       new THREE.MeshStandardMaterial({
         color: 0xff4500
@@ -107,18 +87,15 @@ export class SceneView {
         // Escala o modelo para ~1 unidade de altura (igual ao cubo)
         const box = new THREE.Box3().setFromObject(sonic);
         const size = box.getSize(new THREE.Vector3());
-        sonic.scale.setScalar(1 / size.y);
+        sonic.scale.setScalar(1.5 / size.y);
 
         // Recalcula a caixa já escalada e apoia os pés na base do cubo
         box.setFromObject(sonic);
         sonic.position.y = -box.min.y - 0.5;
-
-        // Se ele aparecer de lado/costas, descomente e teste outros valores:
-        // sonic.rotation.y = Math.PI / 2;
+        sonic.rotation.y = Math.PI / 2;
 
         // Esconde o cubo e pendura o Sonic nele (herda a posição do sync)
-        this.playerMesh.material.visible = false;
-        this.playerMesh.add(sonic);
+        this.playerHB.add(sonic);
       },
       undefined,
       (err) => console.error('Erro ao carregar o Sonic:', err)
