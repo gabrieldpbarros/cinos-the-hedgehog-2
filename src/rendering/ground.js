@@ -1,6 +1,5 @@
 import * as THREE from 'three';
-import { Chunk } from './Chunk.js';
-import { chunkStrategies } from './strategies.js';
+import { ChunkModel } from './ChunkModel.js';
 
 function pattern(colors, checker = false) {
   const canvas = document.createElement('canvas');
@@ -21,25 +20,28 @@ function pattern(colors, checker = false) {
   return texture;
 }
 
-export function createGround() {
+export function createGround(chunks) {
   const materials = [
     new THREE.MeshStandardMaterial({ map: pattern(['#a56832', '#d49a56'], true), side: THREE.DoubleSide }),
     new THREE.MeshStandardMaterial({ map: pattern(['#3a7d44', '#58a84f']), side: THREE.DoubleSide }),
   ];
   const ground = new THREE.Group();
-  let surfaceStart = -100;
 
-  for (let i = 0; i < 5; i++) {
-    const startX = -100 + i * Chunk.length;
-    const chunk = new Chunk(
-      startX, 
-      chunkStrategies.flat, 
-      materials, 
-      surfaceStart
+  for (let chunk of chunks) {
+    const chunkModel = new ChunkModel(
+      chunk,
+      materials
     );
-    ground.add(chunk.getChunkModel());
-    surfaceStart = chunk.surfaceEnd;
+    ground.add(chunkModel.getChunkModel());
   }
 
   return ground;
+}
+
+export function updateGround(ground) {
+
+}
+
+export function getVetorNormal(ground, x, y) {
+
 }
