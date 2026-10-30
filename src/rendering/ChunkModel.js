@@ -1,28 +1,12 @@
 import * as THREE from 'three';
+import { Chunk } from '../game/Chunk.js';
 
-export class Chunk {
-  static length = 40;    // X
-  static depth = 10;     // Z
-  static soilDepth = 3;  // Y (0 a -soilDepth)
-
-  constructor(
-    initialX,
-    chunkType,
-    materials,
-    surfaceStart = initialX
-  ) {
-    this.initialX = initialX;         // posicao global do inicio do chunk
-    this.type = chunkType;            // tipo do chunk (reto, rampa, curva, ...)
+export class ChunkModel {
+  constructor(chunk, materials) {
+    this.chunk = chunk;
+    this.initialX = chunk.initialX;
     this.materials = materials;       // terra e grama, respectivamente
-    this.surfaceStart = surfaceStart; // comprimento da superficie
     this.model = null;                // modelo final (Mesh)
-
-    if (typeof chunkType?.heightAt !== 'function') {
-      throw new TypeError('Chunk type must define heightAt(x, length)');
-    }
-
-    const rise = chunkType.heightAt(Chunk.length, Chunk.length) - chunkType.heightAt(0, Chunk.length);
-    this.surfaceEnd = surfaceStart + Math.hypot(Chunk.length, rise);
   }
 
   getChunkModel() {
@@ -32,8 +16,8 @@ export class Chunk {
     const length = Chunk.length;
     const halfDepth = Chunk.depth / 2; // personagem se posiciona no meio de Z
     const bottom = -Chunk.soilDepth;
-    const leftHeight = this.type.heightAt(0, length);
-    const rightHeight = this.type.heightAt(length, length);
+    const leftHeight = this.chunk.getHeightAtX(this.initialX);
+    const rightHeight = this.chunk.endY;
 
     // construção semelhante à do WebGL2
     const positions = [];  // X (0 a 40), Y (0 a -soilDepth), Z (-halfDepth, halfDepth) da geometria
@@ -81,7 +65,7 @@ export class Chunk {
     // SUPERIOR (+Y)
     face(
       [[0, leftHeight, -halfDepth], [length, rightHeight, -halfDepth], [length, rightHeight, halfDepth], [0, leftHeight, halfDepth]],
-      [top(this.surfaceStart, -halfDepth), top(this.surfaceEnd, -halfDepth), top(this.surfaceEnd, halfDepth), top(this.surfaceStart, halfDepth)],
+      [top(this.chunk.surfaceStart, -halfDepth), top(this.chunk.surfaceEnd, -halfDepth), top(this.chunk.surfaceEnd, halfDepth), top(this.chunk.surfaceStart, halfDepth)],
       1
     );
 
