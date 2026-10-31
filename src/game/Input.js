@@ -36,6 +36,10 @@ export class Input {
     return this.keys.has(code);
   }
 
+  isCrouching() {
+    return this.isDown('ShiftLeft') || this.isDown('ShiftRight');
+  }
+
   getMovement() {
     // 2D platformer: horizontal movement only (X axis)
     let x = 0;

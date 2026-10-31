@@ -6,6 +6,7 @@ import { CONFIG } from './game/constants.js';
 const canvas = document.getElementById('canvas');
 
 const game = new Game(canvas);
+window.__game = game;
 const input = new Input();
 
 input.attach(window);

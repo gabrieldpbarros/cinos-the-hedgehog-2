@@ -12,6 +12,7 @@ export class Player {
     this.velocityY = 0;
     this.onGround = true;
     this.velocityX = 0;
+    this.isCrouching = false;
   }
 
   jump() {
@@ -35,7 +36,9 @@ export class Player {
   }
 
   update(dt, input, chunks) {
+    this.isCrouching = input.isCrouching();
     const move = input.getMovement();
+    const speedCeiling = this.isCrouching ? CONFIG.maxSpeed * 0.5 : CONFIG.maxSpeed;
 
     // Speed buildup / friction / braking (sliding stop)
     if (move.x !== 0) {
@@ -48,7 +51,7 @@ export class Player {
       } else {
         this.velocityX += dir * CONFIG.acceleration * dt;
       }
-      this.velocityX = Math.max(-CONFIG.maxSpeed, Math.min(CONFIG.maxSpeed, this.velocityX));
+      this.velocityX = Math.max(-speedCeiling, Math.min(speedCeiling, this.velocityX));
     } else {
       // friction slows the player down gradually
       if (this.velocityX > 0) {
@@ -92,6 +95,6 @@ export class Player {
 
   // What rendering needs (plain data)
   getSnapshot() {
-    return { x: this.x, y: this.y, z: this.z, onGround: this.onGround, velocityX: this.velocityX };
+    return { x: this.x, y: this.y, z: this.z, onGround: this.onGround, velocityX: this.velocityX, isCrouching: this.isCrouching };
   }
 }
