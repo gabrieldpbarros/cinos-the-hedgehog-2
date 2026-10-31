@@ -29,7 +29,27 @@ export class Game {
     if (this.state !== 'playing') return;
     this.recycleChunks();
     this.player.update(dt, input, this.chunks);
+    this.checkCollisions();
     this.drawScene();
+  }
+
+  checkCollisions() {
+    if (this.state !== 'playing') return;
+    const p = this.player;
+    // Temporary red-cube obstacle (see SceneView)
+    const obstacle = { x: 10, y: 0.5, z: 0, half: 0.55 };
+    const playerHalfX = 0.35;
+    const playerHalfY = 0.4;
+    const playerHalfZ = 0.3;
+
+    const hit =
+      Math.abs(p.x - obstacle.x) < playerHalfX + obstacle.half &&
+      Math.abs(p.y - obstacle.y) < playerHalfY + obstacle.half &&
+      Math.abs(p.z - obstacle.z) < playerHalfZ + obstacle.half;
+
+    if (hit) {
+      this.state = 'lose';
+    }
   }
 
   getDistance() {

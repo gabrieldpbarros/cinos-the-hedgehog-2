@@ -27,9 +27,16 @@ function loop() {
   requestAnimationFrame(loop);
   clock.update();
   const dt = Math.min(clock.getDelta(), CONFIG.maxDt);
-  game.update(dt, input);
+  if (game.state === 'lose') {
+    if (input.consumeJump()) game.startGame();
+  } else {
+    game.update(dt, input);
+  }
   if (hud) {
-    hud.textContent = `Distância: ${game.getDistance().toFixed(1)}`;
+    const distance = game.getDistance().toFixed(1);
+    hud.textContent = game.state === 'lose'
+      ? `Derrota! Distância: ${distance} (Espaço para reiniciar)`
+      : `Distância: ${distance}`;
   }
 }
 loop();
