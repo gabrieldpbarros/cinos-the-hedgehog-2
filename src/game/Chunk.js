@@ -40,7 +40,7 @@ export class Chunk {
     return this.chunkType.heightAt(x - this.initialX, this.baseY, this.theta);
   }
 
-  getNormalVector(x) {
+  getNormalVector(_x) {
     
   }
 }

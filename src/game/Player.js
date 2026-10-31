@@ -1,4 +1,5 @@
 import { CONFIG } from './constants.js';
+import { Chunk } from './Chunk.js';
 
 export class Player {
   constructor(
@@ -12,14 +13,6 @@ export class Player {
     this.onGround = true;
   }
 
-  goForward(dt) {
-    // Player speed
-    this.speed = CONFIG.forwardSpeed; // constante por enquanto
-
-    // Auto-forward movement along X
-    this.x += this.speed * dt;
-  }
-
   jump() {
     this.velocityY = CONFIG.jumpVelocity;
     this.onGround = false;
@@ -30,22 +23,38 @@ export class Player {
     this.velocityY += CONFIG.gravity * dt;
   }
 
-  update(dt, input) {
-    this.goForward(dt);
+  groundHeightAt(x, chunks) {
+    const chunk = chunks?.find((c) => x >= c.initialX && x < c.initialX + Chunk.length);
+    if (chunk) return chunk.getHeightAtX(x);
+    // Fallback to the last known chunk so the player never drops through the world
+    const last = chunks?.[chunks.length - 1];
+    return last ? last.getHeightAtX(last.initialX + Chunk.length) : 0;
+  }
+
+  update(dt, input, chunks) {
+    const move = input.getMovement();
+    const speed = CONFIG.forwardSpeed;
+    this.x += move.x * speed * dt;
+    this.z += move.z * speed * dt;
 
     // Jump
     if (input.consumeJump() && this.onGround)
       this.jump();
 
     // Gravity
-    if (!this.onGround) 
+    if (!this.onGround)
       this.fall(dt);
 
-    // Ground collision
-    if (this.y <= CONFIG.groundOffset) {
-      this.y = CONFIG.groundOffset;
+    // Ground collision / terrain following
+    const groundY = this.groundHeightAt(this.x, chunks);
+    const minY = groundY + CONFIG.groundOffset;
+    if (this.y <= minY) {
+      this.y = minY;
       this.velocityY = 0;
       this.onGround = true;
+    } else if (this.onGround) {
+      // Keep the player glued to sloped ground while moving
+      this.y = minY;
     }
   }
 

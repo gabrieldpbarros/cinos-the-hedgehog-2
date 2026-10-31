@@ -4,6 +4,9 @@ import globals from "globals";
 
 export default defineConfig([
     {
+        ignores: ["dist/**", "node_modules/**"]
+    },
+    {
         files: ["**/*.js", "**/*.mjs"],
         plugins: { js },
         extends: ["js/recommended"],
@@ -12,6 +15,9 @@ export default defineConfig([
                 ...globals.browser,
                 ...globals.node
             }
+        },
+        rules: {
+            "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }]
         }
     }
 ]);

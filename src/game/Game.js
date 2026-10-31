@@ -27,23 +27,30 @@ export class Game {
 
   update(dt, input) {
     if (this.state !== 'playing') return;
-    this.player.update(dt, input);
+    this.recycleChunks();
+    this.player.update(dt, input, this.chunks);
     this.drawScene();
+  }
+
+  getDistance() {
+    if (!this.player || this.startPosX === undefined) return 0;
+    return this.player.x - this.startPosX;
   }
 
   getSnapshot() {
     return {
       state: this.state,
       player: this.player.getSnapshot(),
+      terrainY: this.player ? this.player.groundHeightAt(this.player.x, this.chunks) : 0,
     };
   }
 
   switchCamera() {
-    this.scene.switchCamera();
+    if (this.scene) this.scene.switchCamera();
   }
 
-  resizeWindow(width, heigth) {
-    this.scene.resize(width, heigth);
+  resizeWindow(width, height) {
+    if (this.scene) this.scene.resize(width, height);
   }
 
   createInitialChunks() {
@@ -82,6 +89,32 @@ export class Game {
     this.scene = new SceneView(this.canvas);
     this.scene.drawChunks(this.chunks);
     this.scene.drawPlayer(this.player);
+  }
+
+  recycleChunks() {
+    if (!this.scene || !this.chunks || this.chunks.length === 0) return;
+
+    const getRandomIndex = (ceil) => Math.floor(Math.random() * ceil);
+    const chunkKeys = Object.keys(this.CHUNK_TYPES);
+
+    // Drop chunks that are well behind the player and spawn new ones ahead
+    while (this.chunks.length > 0 && this.player.x > this.chunks[0].initialX + Chunk.length * 3) {
+      this.chunks.shift();
+      this.scene.removeFirstChunk();
+
+      const last = this.chunks[this.chunks.length - 1];
+      if (!last) break;
+
+      const typeKey = chunkKeys[getRandomIndex(chunkKeys.length)];
+      const newChunk = new Chunk(
+        last.initialX + Chunk.length,
+        this.CHUNK_TYPES[typeKey],
+        last.endY,
+        last.surfaceEnd,
+      );
+      this.chunks.push(newChunk);
+      this.scene.appendChunk(newChunk);
+    }
   }
 
   drawScene() {

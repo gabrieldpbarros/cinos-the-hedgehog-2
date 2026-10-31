@@ -21,11 +21,15 @@ window.addEventListener('resize', () => {
 
 game.startGame();
 const clock = new THREE.Timer();
+const hud = document.getElementById('hud');
 
 function loop() {
   requestAnimationFrame(loop);
   clock.update();
   const dt = Math.min(clock.getDelta(), CONFIG.maxDt);
   game.update(dt, input);
+  if (hud) {
+    hud.textContent = `Distância: ${game.getDistance().toFixed(1)}`;
+  }
 }
 loop();

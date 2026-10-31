@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { createGround } from './ground.js';
+import { pattern } from './ground.js';
+import { ChunkModel } from './ChunkModel.js';
 
 export class SceneView {
   constructor(canvas) {
@@ -63,7 +64,25 @@ export class SceneView {
 
   drawChunks(chunks) {
     // Ground
-    this.scene.add(createGround(chunks));
+    this.chunkMaterials = [
+      new THREE.MeshStandardMaterial({ map: pattern(['#a56832', '#d49a56'], true), side: THREE.DoubleSide }),
+      new THREE.MeshStandardMaterial({ map: pattern(['#3a7d44', '#58a84f']), side: THREE.DoubleSide }),
+    ];
+    this.ground = new THREE.Group();
+    this.chunkModels = [];
+    for (const chunk of chunks) this.appendChunk(chunk);
+    this.scene.add(this.ground);
+  }
+
+  appendChunk(chunk) {
+    const chunkModel = new ChunkModel(chunk, this.chunkMaterials);
+    this.ground.add(chunkModel.getChunkModel());
+    this.chunkModels.push(chunkModel);
+  }
+
+  removeFirstChunk() {
+    const chunkModel = this.chunkModels.shift();
+    chunkModel?.destroyChunk();
   }
 
   drawPlayer(player) {
@@ -122,16 +141,17 @@ export class SceneView {
 
   sync(gameSnapshot) {
     const p = gameSnapshot.player;
+    const terrainY = gameSnapshot.terrainY ?? 0;
     this.playerHB.position.set(p.x, p.y, p.z);
     //this.playerhb_box.update();
 
-    // Keep side camera following player on X
-    this.cameras.side.position.x = p.x;
-    this.cameras.side.lookAt(p.x, 1, 0);
+    // Keep side camera following player on X and terrain height (not jumps)
+    this.cameras.side.position.set(p.x, terrainY + 4.5, 12);
+    this.cameras.side.lookAt(p.x, terrainY + 1, 0);
 
     // Keep 3/4 camera following too
-    this.cameras.threeQuarter.position.x = p.x + 8;
-    this.cameras.threeQuarter.lookAt(p.x, 1, 0);
+    this.cameras.threeQuarter.position.set(p.x + 8, terrainY + 5.5, 8);
+    this.cameras.threeQuarter.lookAt(p.x, terrainY + 1, 0);
   }
 
   render() {
