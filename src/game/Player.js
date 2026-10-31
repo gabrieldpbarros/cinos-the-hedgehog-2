@@ -92,6 +92,6 @@ export class Player {
 
   // What rendering needs (plain data)
   getSnapshot() {
-    return { x: this.x, y: this.y, z: this.z, onGround: this.onGround };
+    return { x: this.x, y: this.y, z: this.z, onGround: this.onGround, velocityX: this.velocityX };
   }
 }

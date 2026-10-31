@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { pattern } from './ground.js';
 import { ChunkModel } from './ChunkModel.js';
+import { CONFIG } from '../game/constants.js';
 
 export class SceneView {
   constructor(canvas) {
@@ -20,6 +21,7 @@ export class SceneView {
 
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.clock = new THREE.Clock();
 
     // Lights
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.35));
@@ -116,6 +118,13 @@ export class SceneView {
         sonic.rotation.y = Math.PI / 2;
 
         this.playerHB.add(sonic);
+
+        // Basic animation support (model is rigged/skinned)
+        if (gltf.animations && gltf.animations.length > 0) {
+          this.mixer = new THREE.AnimationMixer(sonic);
+          this.action = this.mixer.clipAction(gltf.animations[0]);
+          this.action.play();
+        }
       },
       undefined,
       (err) => console.error('Erro ao carregar o Sonic:', err)
@@ -143,6 +152,15 @@ export class SceneView {
     const p = gameSnapshot.player;
     const terrainY = gameSnapshot.terrainY ?? 0;
     this.playerHB.position.set(p.x, p.y, p.z);
+
+    if (this.action) {
+      const speed = Math.abs(p.velocityX ?? 0);
+      if (!p.onGround) {
+        this.action.timeScale = 1.2;
+      } else {
+        this.action.timeScale = Math.max(0.6, speed / CONFIG.forwardSpeed);
+      }
+    }
     //this.playerhb_box.update();
 
     if (gameSnapshot.obstacle && this.enemyHB) {
@@ -173,6 +191,8 @@ export class SceneView {
   }
 
   render() {
+    const dt = this.clock.getDelta();
+    this.mixer?.update(dt);
     this.renderer.render(this.scene, this.activeCamera);
   }
 }
