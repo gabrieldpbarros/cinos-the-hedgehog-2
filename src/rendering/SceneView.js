@@ -145,6 +145,10 @@ export class SceneView {
     this.playerHB.position.set(p.x, p.y, p.z);
     //this.playerhb_box.update();
 
+    if (gameSnapshot.obstacle && this.enemyHB) {
+      this.enemyHB.position.set(gameSnapshot.obstacle.x, gameSnapshot.obstacle.y, gameSnapshot.obstacle.z);
+    }
+
     // Keep side camera following player on X and terrain height (not jumps)
     this.cameras.side.position.set(p.x, terrainY + 4.5, 12);
     this.cameras.side.lookAt(p.x, terrainY + 1, 0);
@@ -152,6 +156,20 @@ export class SceneView {
     // Keep 3/4 camera following too
     this.cameras.threeQuarter.position.set(p.x + 8, terrainY + 5.5, 8);
     this.cameras.threeQuarter.lookAt(p.x, terrainY + 1, 0);
+  }
+
+  resetScene(chunks, player) {
+    if (this.ground) {
+      this.ground.removeFromParent();
+      this.ground = null;
+      this.chunkModels = [];
+    }
+    if (this.playerHB) {
+      this.playerHB.removeFromParent();
+      this.playerHB = null;
+    }
+    this.drawChunks(chunks);
+    this.drawPlayer(player);
   }
 
   render() {
