@@ -23,6 +23,7 @@ window.addEventListener('resize', () => {
 game.startGame();
 const clock = new THREE.Timer();
 const hud = document.getElementById('hud');
+const overlay = document.getElementById('overlay');
 
 function loop() {
   requestAnimationFrame(loop);
@@ -33,11 +34,21 @@ function loop() {
   } else {
     game.update(dt, input);
   }
+
+  const snapshot = game.getSnapshot();
+  const distance = game.getDistance().toFixed(1);
+  const speed = (snapshot.player?.velocityX ?? 0).toFixed(1);
   if (hud) {
-    const distance = game.getDistance().toFixed(1);
-    hud.textContent = game.state === 'lose'
-      ? `Derrota! Distância: ${distance} (Espaço para reiniciar)`
-      : `Distância: ${distance}`;
+    hud.textContent = `Distância: ${distance}  Vel: ${speed}  Estado: ${game.state}`;
+  }
+  if (overlay) {
+    if (game.state === 'lose') {
+      overlay.style.display = 'flex';
+      overlay.innerHTML = `Derrota!<br><small>Distância: ${distance} m - Espaço para reiniciar</small>`;
+    } else {
+      overlay.style.display = 'none';
+      overlay.innerHTML = '';
+    }
   }
 }
 loop();
