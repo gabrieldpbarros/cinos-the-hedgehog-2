@@ -1,14 +1,14 @@
 export const chunkStrategies = {
-  flat: { 
-    heightAt: (X, baseY) => baseY,
-    normalAt: (X, theta) => {}
+  flat: {
+    heightAt: (_X, baseY) => baseY,
+    normalAt: (_X, _theta) => {}
   },
-  rampUp: { 
+  rampUp: {
     heightAt: (X, baseY, theta) => (X * Math.tan(theta)) + baseY,
     normalAt: () => {}
   },
   rampDown: {
     heightAt: (X, baseY, theta) => baseY - X * Math.tan(theta),
-    normalAt: (X, theta) => {}
+    normalAt: (_X, _theta) => {}
   }
 };

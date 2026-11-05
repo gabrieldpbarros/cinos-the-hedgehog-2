@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { ChunkModel } from './ChunkModel.js';
 
-function pattern(colors, checker = false) {
+export function pattern(colors, checker = false) {
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = 64;
   const context = canvas.getContext('2d');
@@ -38,10 +38,10 @@ export function createGround(chunks) {
   return ground;
 }
 
-export function updateGround(ground) {
+export function updateGround(_ground) {
 
 }
 
-export function getVetorNormal(ground, x, y) {
+export function getVetorNormal(_ground, _x, _y) {
 
 }

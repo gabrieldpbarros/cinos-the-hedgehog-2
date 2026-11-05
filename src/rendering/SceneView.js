@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { createGround } from './ground.js';
+import { pattern } from './ground.js';
+import { ChunkModel } from './ChunkModel.js';
 
 export class SceneView {
   constructor(canvas) {
@@ -42,7 +43,7 @@ export class SceneView {
     this.enemyHB = new THREE.Mesh(
       new THREE.BoxGeometry(1.1, 1.1, 1.1),
       new THREE.MeshStandardMaterial({
-        color: 0xffffff, 
+        color: 0xffffff,
         transparent: true,
         opacity: 0
       })
@@ -63,15 +64,44 @@ export class SceneView {
 
   drawChunks(chunks) {
     // Ground
-    this.scene.add(createGround(chunks));
+    this.chunkMaterials = [
+      new THREE.MeshStandardMaterial({ map: pattern(['#a56832', '#d49a56'], true), side: THREE.DoubleSide }),
+      new THREE.MeshStandardMaterial({ map: pattern(['#3a7d44', '#58a84f']), side: THREE.DoubleSide }),
+    ];
+    this.ground = new THREE.Group();
+    this.chunkModels = [];
+    for (const chunk of chunks) this.appendChunk(chunk);
+    this.scene.add(this.ground);
+  }
+
+  appendChunk(chunk) {
+    if (!this.chunkMaterials) {
+      this.chunkMaterials = [
+        new THREE.MeshStandardMaterial({ map: pattern(['#a56832', '#d49a56'], true), side: THREE.DoubleSide }),
+        new THREE.MeshStandardMaterial({ map: pattern(['#3a7d44', '#58a84f']), side: THREE.DoubleSide }),
+      ];
+    }
+    if (!this.ground) {
+      this.ground = new THREE.Group();
+      this.chunkModels = [];
+      this.scene.add(this.ground);
+    }
+    const chunkModel = new ChunkModel(chunk, this.chunkMaterials);
+    this.ground.add(chunkModel.getChunkModel());
+    this.chunkModels.push(chunkModel);
+  }
+
+  removeFirstChunk() {
+    const chunkModel = this.chunkModels.shift();
+    chunkModel?.destroyChunk();
   }
 
   drawPlayer(player) {
     // Player mesh (model + hitbox)
     this.playerHB = new THREE.Mesh(
       new THREE.BoxGeometry(0.7, 0.8, 0.6),
-      new THREE.MeshStandardMaterial({ 
-        color: 0xffffff, 
+      new THREE.MeshStandardMaterial({
+        color: 0xffffff,
         transparent: true,
         opacity: 0
       })
@@ -105,6 +135,20 @@ export class SceneView {
     //this.scene.add(this.playerhb_box);
   }
 
+  resetScene(chunks, player) {
+    if (this.ground) {
+      this.ground.removeFromParent();
+      this.ground = null;
+      this.chunkModels = [];
+    }
+    if (this.playerHB) {
+      this.playerHB.removeFromParent();
+      this.playerHB = null;
+    }
+    this.drawChunks(chunks);
+    this.drawPlayer(player);
+  }
+
   resize(w, h) {
     Object.values(this.cameras).forEach((cam) => {
       cam.aspect = w / h;
@@ -122,16 +166,21 @@ export class SceneView {
 
   sync(gameSnapshot) {
     const p = gameSnapshot.player;
+    const terrainY = gameSnapshot.terrainY ?? 0;
     this.playerHB.position.set(p.x, p.y, p.z);
     //this.playerhb_box.update();
 
-    // Keep side camera following player on X
-    this.cameras.side.position.x = p.x;
-    this.cameras.side.lookAt(p.x, 1, 0);
+    if (gameSnapshot.obstacle && this.enemyHB) {
+      this.enemyHB.position.set(gameSnapshot.obstacle.x, gameSnapshot.obstacle.y, gameSnapshot.obstacle.z);
+    }
+
+    // Keep side camera following player on X and terrain height (not jumps)
+    this.cameras.side.position.set(p.x, terrainY + 4.5, 12);
+    this.cameras.side.lookAt(p.x, terrainY + 1, 0);
 
     // Keep 3/4 camera following too
-    this.cameras.threeQuarter.position.x = p.x + 8;
-    this.cameras.threeQuarter.lookAt(p.x, 1, 0);
+    this.cameras.threeQuarter.position.set(p.x + 8, terrainY + 5.5, 8);
+    this.cameras.threeQuarter.lookAt(p.x, terrainY + 1, 0);
   }
 
   render() {

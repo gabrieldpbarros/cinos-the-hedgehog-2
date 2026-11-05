@@ -1,4 +1,5 @@
 import { CONFIG } from './constants.js';
+import { Chunk } from './Chunk.js';
 
 export class Player {
   constructor(
@@ -10,14 +11,8 @@ export class Player {
     this.z = 0;
     this.velocityY = 0;
     this.onGround = true;
-  }
-
-  goForward(dt) {
-    // Player speed
-    this.speed = CONFIG.forwardSpeed; // constante por enquanto
-
-    // Auto-forward movement along X
-    this.x += this.speed * dt;
+    this.velocityX = 0;
+    this.isCrouching = false;
   }
 
   jump() {
@@ -30,27 +25,76 @@ export class Player {
     this.velocityY += CONFIG.gravity * dt;
   }
 
-  update(dt, input) {
-    this.goForward(dt);
+  groundHeightAt(x, chunks) {
+    if (!chunks || chunks.length === 0) return 0;
+    const first = chunks[0];
+    const last = chunks[chunks.length - 1];
+    if (x < first.initialX) return first.getHeightAtX(first.initialX);
+    if (x >= last.initialX + Chunk.length) return last.getHeightAtX(last.initialX + Chunk.length);
+    const chunk = chunks.find((c) => x >= c.initialX && x < c.initialX + Chunk.length);
+    return chunk ? chunk.getHeightAtX(x) : 0;
+  }
+
+  update(dt, input, chunks) {
+    this.isCrouching = input.isCrouching();
+    const move = input.getMovement();
+    const speedCeiling = this.isCrouching ? CONFIG.maxSpeed * 0.5 : CONFIG.maxSpeed;
+
+    // Speed buildup / friction / braking (sliding stop)
+    if (move.x !== 0) {
+      const dir = Math.sign(move.x);
+      const reversing = this.velocityX !== 0 && Math.sign(this.velocityX) !== dir;
+      if (reversing) {
+        // brake faster when pressing opposite direction
+        this.velocityX += dir * CONFIG.braking * dt;
+        if (Math.sign(this.velocityX) !== dir) this.velocityX = 0;
+      } else {
+        this.velocityX += dir * CONFIG.acceleration * dt;
+      }
+      this.velocityX = Math.max(-speedCeiling, Math.min(speedCeiling, this.velocityX));
+    } else {
+      // friction slows the player down gradually
+      if (this.velocityX > 0) {
+        this.velocityX = Math.max(0, this.velocityX - CONFIG.friction * dt);
+      } else if (this.velocityX < 0) {
+        this.velocityX = Math.min(0, this.velocityX + CONFIG.friction * dt);
+      }
+    }
+
+    this.x += this.velocityX * dt;
+
+    // Keep player inside the generated track (left boundary)
+    if (chunks && chunks.length > 0) {
+      const minX = chunks[0].initialX;
+      if (this.x < minX) {
+        this.x = minX;
+        this.velocityX = 0;
+      }
+    }
 
     // Jump
     if (input.consumeJump() && this.onGround)
       this.jump();
 
     // Gravity
-    if (!this.onGround) 
+    if (!this.onGround)
       this.fall(dt);
 
-    // Ground collision
-    if (this.y <= CONFIG.groundOffset) {
-      this.y = CONFIG.groundOffset;
+    // Ground collision / terrain following
+    const groundY = this.groundHeightAt(this.x, chunks);
+    const minY = groundY + CONFIG.groundOffset;
+    if (this.y <= minY) {
+      this.y = minY;
       this.velocityY = 0;
       this.onGround = true;
+    } else if (this.onGround) {
+      // Keep the player glued to sloped ground while moving
+      this.y = minY;
     }
   }
 
   // What rendering needs (plain data)
   getSnapshot() {
-    return { x: this.x, y: this.y, z: this.z, onGround: this.onGround };
+    return { x: this.x, y: this.y, z: this.z, onGround: this.onGround, velocityX: this.velocityX, isCrouching: this.isCrouching };
   }
 }
