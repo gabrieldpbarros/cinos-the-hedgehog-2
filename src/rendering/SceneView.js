@@ -11,10 +11,10 @@ export class SceneView {
 
     this.cameras = {
       side: new THREE.PerspectiveCamera(60, 1, 0.1, 1000),
-      threeQuarter: new THREE.PerspectiveCamera(60, 1, 0.1, 1000),
+      oneQuarter: new THREE.PerspectiveCamera(60, 1, 0.1, 1000),
     };
     this.cameras.side.position.set(0, 5, 12);
-    this.cameras.threeQuarter.position.set(8, 6, 8); // editar para 1/4
+    this.cameras.oneQuarter.position.set(-8, 6, 8);
 
     this.activeCamera = this.cameras.side;
 
@@ -22,7 +22,7 @@ export class SceneView {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;;
     
     // // Lights
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.5));
@@ -122,7 +122,9 @@ export class SceneView {
       this.scene.add(this.ground);
     }
     const chunkModel = new ChunkModel(chunk, this.chunkMaterials);
-    this.ground.add(chunkModel.getChunkModel());
+    const mesh = chunkModel.getChunkModel();
+    mesh.receiveShadow = true;
+    this.ground.add(mesh);
     this.chunkModels.push(chunkModel);
   }
 
@@ -206,7 +208,7 @@ export class SceneView {
   switchCamera() {
     this.activeCamera =
       this.activeCamera === this.cameras.side
-        ? this.cameras.threeQuarter
+        ? this.cameras.oneQuarter
         : this.cameras.side;
   }
 
@@ -226,17 +228,12 @@ export class SceneView {
     this.cameras.side.position.set(p.x, terrainY + 4.5, 12);
     this.cameras.side.lookAt(p.x, terrainY + 1, 0);
 
-    // Keep 3/4 camera following too
-<<<<<<< HEAD
-    this.cameras.threeQuarter.position.set(p.x + 8, terrainY + 5.5, 8);
-    this.cameras.threeQuarter.lookAt(p.x, terrainY + 1, 0);
-=======
-    this.cameras.threeQuarter.position.x = p.x + 8;
-    this.cameras.threeQuarter.lookAt(p.x, 1, 0);
+    // Keep the alternate camera following the terrain height too
+    this.cameras.oneQuarter.position.set(p.x - 8, terrainY + 6, 8);
+    this.cameras.oneQuarter.lookAt(p.x, terrainY + 1, 0);
 
-    this.sun.position.set(p.x + 6, 10, 6);
-    this.sun.target.position.set(p.x, 0, 0);
->>>>>>> bbe25757136ce535f9b082531a7ba166e0a91546
+    this.sun.position.set(p.x + 6, terrainY + 10, 6);
+    this.sun.target.position.set(p.x, terrainY, 0);
   }
 
   render() {
