@@ -41,3 +41,4 @@ loader.load(
 **Iluminação**: Modelos GLTF costumam usar materiais PBR (`MeshStandardMaterial`). Lembre-se de adicionar uma luz ambiente (`AmbientLight`) e uma luz direcional (`DirectionalLight`) na cena.
 
 **Otimização**: Se o arquivo for muito pesado, você pode otimizá-lo facilmente usando a ferramenta via CLI gltf-pipeline ou arrastando o arquivo no site gltf.report.
+
