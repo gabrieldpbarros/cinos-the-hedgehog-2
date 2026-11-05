@@ -10,10 +10,10 @@ export class SceneView {
 
     this.cameras = {
       side: new THREE.PerspectiveCamera(60, 1, 0.1, 1000),
-      threeQuarter: new THREE.PerspectiveCamera(60, 1, 0.1, 1000),
+      oneQuarter: new THREE.PerspectiveCamera(60, 1, 0.1, 1000),
     };
     this.cameras.side.position.set(0, 5, 12);
-    this.cameras.threeQuarter.position.set(8, 6, 8); // editar para 1/4
+    this.cameras.oneQuarter.position.set(-9, 6, 8); // editar para 1/4
 
     this.activeCamera = this.cameras.side;
 
@@ -116,7 +116,7 @@ export class SceneView {
   switchCamera() {
     this.activeCamera =
       this.activeCamera === this.cameras.side
-        ? this.cameras.threeQuarter
+        ? this.cameras.oneQuarter
         : this.cameras.side;
   }
 
@@ -129,9 +129,9 @@ export class SceneView {
     this.cameras.side.position.x = p.x;
     this.cameras.side.lookAt(p.x, 1, 0);
 
-    // Keep 3/4 camera following too
-    this.cameras.threeQuarter.position.x = p.x + 8;
-    this.cameras.threeQuarter.lookAt(p.x, 1, 0);
+    // Keep 1/4 camera following too
+    this.cameras.oneQuarter.position.x = p.x - 9;
+    this.cameras.oneQuarter.lookAt(p.x, 1, 0);
   }
 
   render() {

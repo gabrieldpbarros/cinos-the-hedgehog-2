@@ -9,7 +9,7 @@ export class Chunk {
     chunkType,
     baseY,
     surfaceStart = initialX,
-    theta = Chunk.theta,
+    theta        = Chunk.theta,
   ) {
     this.makeChunk(initialX, chunkType, baseY, surfaceStart, theta);
   }
@@ -19,20 +19,20 @@ export class Chunk {
     chunkType,
     baseY,
     surfaceStart = initialX,
-    theta = Chunk.theta,
+    theta        = Chunk.theta,
   ) {
-    this.initialX = initialX;         // posicao global do inicio do chunk
-    this.chunkType = chunkType;       // tipo do chunk (reto, rampa, curva, ...)
-    this.baseY = baseY;               // altura da superficie no inicio do chunk
-    this.theta = theta;
+    this.initialX     = initialX;     // posicao global do inicio do chunk
+    this.chunkType    = chunkType;    // tipo do chunk (reto, rampa, curva, ...)
+    this.baseY        = baseY;        // altura da superficie no inicio do chunk
+    this.theta        = theta;
     this.surfaceStart = surfaceStart; // comprimento da superficie
 
     if (typeof chunkType?.heightAt !== 'function') {
       throw new TypeError('Chunk type must define heightAt(x, baseY, theta)');
     }
 
-    this.endY = this.getHeightAtX(initialX + Chunk.length);
-    const rise = this.endY - baseY;
+    this.endY       = this.getHeightAtX(initialX + Chunk.length);
+    const rise      = this.endY - baseY;
     this.surfaceEnd = surfaceStart + Math.hypot(Chunk.length, rise);
   }
 
