@@ -11,21 +11,49 @@ export class SceneView {
 
     this.cameras = {
       side: new THREE.PerspectiveCamera(60, 1, 0.1, 1000),
-      threeQuarter: new THREE.PerspectiveCamera(60, 1, 0.1, 1000),
+      oneQuarter: new THREE.PerspectiveCamera(60, 1, 0.1, 1000),
     };
     this.cameras.side.position.set(0, 5, 12);
-    this.cameras.threeQuarter.position.set(8, 6, 8); // editar para 1/4
+    this.cameras.oneQuarter.position.set(-8, 6, 8);
 
     this.activeCamera = this.cameras.side;
 
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    // Lights
-    this.scene.add(new THREE.AmbientLight(0xffffff, 0.35));
-    const sun = new THREE.DirectionalLight(0xffffff, 1.0);
-    sun.position.set(5, 10, 5);
-    this.scene.add(sun);
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;;
+    
+    // // Lights
+    this.scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+    // Luz principal: quente, da frente/direita (projeta sombra)
+    this.sun = new THREE.DirectionalLight(0xfff0d0, 2.5);
+    this.sun.position.set(6, 10, 6);
+    this.sun.castShadow = true;
+
+    this.sun.shadow.mapSize.set(2048, 2048);
+    const sc = this.sun.shadow.camera;
+    sc.left = -15;
+    sc.right = 15;
+    sc.top = 15;
+    sc.bottom = -15;
+    sc.near = 1;
+    sc.far = 40;
+    this.sun.shadow.bias = -0.0005;
+    this.sun.shadow.normalBias = 0.02;
+
+    this.scene.add(this.sun);
+    this.scene.add(this.sun.target);
+
+    // Preenchimento: levemente azulada, da frente/esquerda
+    this.fillLight = new THREE.DirectionalLight(0x0066ff, 1.5);
+    this.fillLight.position.set(-6, 5, 10);
+    this.scene.add(this.fillLight);
+    this.scene.add(this.fillLight.target);
+
+    // sun.visible = false;
+    // this.fillLight.visible = false;
 
     // Skybox
     this.skybox_loader = new THREE.TextureLoader();
@@ -35,8 +63,11 @@ export class SceneView {
         this.skybox_texture.mapping = THREE.EquirectangularReflectionMapping;
         this.skybox_texture.colorSpace = THREE.SRGBColorSpace;
         this.scene.background = this.skybox_texture;
+        // this.scene.environment = this.skybox_texture; 
+        // this.scene.environmentIntensity = 1.0;
       }
     );
+    
 
     // ============================== TEMPORARIO ==============================
     // Enemy mesh (model + hitbox)
@@ -54,6 +85,10 @@ export class SceneView {
         color: 0xff4500
       })
     );
+
+    this.enemyModel.castShadow = true;
+    this.enemyModel.receiveShadow = true;
+
     this.enemyHB.add(this.enemyModel);
     this.enemyHB.position.set(10, 0.5, 0);
     this.scene.add(this.enemyHB);
@@ -87,7 +122,9 @@ export class SceneView {
       this.scene.add(this.ground);
     }
     const chunkModel = new ChunkModel(chunk, this.chunkMaterials);
-    this.ground.add(chunkModel.getChunkModel());
+    const mesh = chunkModel.getChunkModel();
+    mesh.receiveShadow = true;
+    this.ground.add(mesh);
     this.chunkModels.push(chunkModel);
   }
 
@@ -109,6 +146,8 @@ export class SceneView {
     this.playerHB.position.set(player.x, player.y, player.z);
     //this.playerhb_box = new THREE.BoxHelper(this.playerHB);
 
+    
+
     // Carrega o modelo do Sonic (assíncrono)
     if (!this.loader) this.loader = new GLTFLoader();
     this.loader.load(
@@ -125,6 +164,15 @@ export class SceneView {
         box.setFromObject(sonic);
         sonic.position.y = -box.min.y - 0.5;
         sonic.rotation.y = Math.PI / 2;
+
+        sonic.traverse((obj) => {
+          if (obj.isMesh) {
+            obj.material.metalness = 0.05;
+            obj.material.roughness = 0.6;
+            obj.castShadow = true;
+            obj.receiveShadow = true;
+          }
+        });
 
         this.playerHB.add(sonic);
       },
@@ -160,7 +208,7 @@ export class SceneView {
   switchCamera() {
     this.activeCamera =
       this.activeCamera === this.cameras.side
-        ? this.cameras.threeQuarter
+        ? this.cameras.oneQuarter
         : this.cameras.side;
   }
 
@@ -169,6 +217,8 @@ export class SceneView {
     const terrainY = gameSnapshot.terrainY ?? 0;
     this.playerHB.position.set(p.x, p.y, p.z);
     //this.playerhb_box.update();
+    this.fillLight.position.set(p.x - 5, 4, 12);
+    this.fillLight.target.position.set(p.x, 1, 0);
 
     if (gameSnapshot.obstacle && this.enemyHB) {
       this.enemyHB.position.set(gameSnapshot.obstacle.x, gameSnapshot.obstacle.y, gameSnapshot.obstacle.z);
@@ -178,9 +228,12 @@ export class SceneView {
     this.cameras.side.position.set(p.x, terrainY + 4.5, 12);
     this.cameras.side.lookAt(p.x, terrainY + 1, 0);
 
-    // Keep 3/4 camera following too
-    this.cameras.threeQuarter.position.set(p.x + 8, terrainY + 5.5, 8);
-    this.cameras.threeQuarter.lookAt(p.x, terrainY + 1, 0);
+    // Keep the alternate camera following the terrain height too
+    this.cameras.oneQuarter.position.set(p.x - 8, terrainY + 6, 8);
+    this.cameras.oneQuarter.lookAt(p.x, terrainY + 1, 0);
+
+    this.sun.position.set(p.x + 6, terrainY + 10, 6);
+    this.sun.target.position.set(p.x, terrainY, 0);
   }
 
   render() {
