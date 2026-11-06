@@ -5,6 +5,14 @@ export class Input {
     this.pressedKeys = new Set();
   }
 
+  _onKeyDown(e) {
+    this.pressedKeys.add(e.code);
+  }
+
+  _onKeyUp(e) {
+    this.pressedKeys.delete(e.code);
+  }
+
   attach(target = window) {
     target.addEventListener('keydown', this._onKeyDown);
     target.addEventListener('keyup', this._onKeyUp)
@@ -15,11 +23,11 @@ export class Input {
     target.removeEventListener('keyup', this._onKeyUp);
   }
 
-  _onKeyDown(e) {
-
+  isDown(code) {
+    return this.pressedKeys.has(code);
   }
 
-  _onKeyUp(e) {
-
+  clean() {
+    this.pressedKeys.clear();
   }
 }

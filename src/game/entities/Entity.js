@@ -7,7 +7,11 @@ class Entity {
     this.model = model;
   }
 
-  handleAction() {
+  handleAction(action, state) {
+    
+  }
+
+  update(dt) {
     
   }
 }
