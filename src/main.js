@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Game } from './game/Game.js';
-import { Input } from './game/Input.js';
+import { Input } from './game/logic/Input.js';
 import { CONFIG } from './game/constants.js';
 
 const canvas = document.getElementById('canvas');
