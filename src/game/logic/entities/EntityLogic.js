@@ -53,8 +53,8 @@ export class EntityLogic {
   }
 
   checkCollision(otherEntity) {
-    const own          = this.hitboxDim;
-    const other        = otherEntity.hitboxDim;
+    const own           = this.hitboxDim;
+    const other         = otherEntity.hitboxDim;
     const isInXInterval = Math.abs(this.position.x - otherEntity.position.x) <= (own.length + other.length) / 2;
     const isInYInterval = Math.abs(this.position.y - otherEntity.position.y) <= (own.heigth + other.heigth) / 2;
     const isInZInterval = Math.abs(this.position.z - otherEntity.position.z) <= (own.depth  + other.depth)  / 2;
