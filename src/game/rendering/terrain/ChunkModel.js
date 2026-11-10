@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Chunk } from '../game/Chunk.js';
+import { Chunk } from '../../logic/terrain/Chunk.js';
 
 export class ChunkModel {
   constructor(chunk, materials) {

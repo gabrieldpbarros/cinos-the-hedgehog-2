@@ -1,7 +1,22 @@
+export const chunkStrategies = {
+  flat: { 
+    heightAt: (X, baseY) => baseY,
+    normalAt: (X, theta) => {}
+  },
+  rampUp: { 
+    heightAt: (X, baseY, theta) => (X * Math.tan(theta)) + baseY,
+    normalAt: () => {}
+  },
+  rampDown: {
+    heightAt: (X, baseY, theta) => baseY - X * Math.tan(theta),
+    normalAt: (X, theta) => {}
+  }
+};
+
 export class Chunk {
   static length = 40;    // X 
   static depth = 10;     // Z
-  static soilDepth = 3;  // Y (0 a -soilDepth)
+  static soilDepth = 3;  // Y (Ytop - Ybottom = soilDepth)
   static theta = 0.05;
 
   constructor(
