@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createGround } from './terrain/ground.js';
+import { TerrainModel } from './terrain/TerrainModel.js';
 
 export class SceneView {
   constructor(canvas) {
@@ -41,7 +41,9 @@ export class SceneView {
 
   drawChunks(chunks) {
     // Ground
-    this.scene.add(createGround(chunks));
+    this.terrainModel = new TerrainModel("green_hill");
+    this.terrainModel.createGround(chunks);
+    this.scene.add(this.terrainModel.getGround());
   }
 
   drawEntity(entity) {

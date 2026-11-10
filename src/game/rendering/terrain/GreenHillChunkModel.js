@@ -1,12 +1,34 @@
 import * as THREE from 'three';
 import { Chunk } from '../../logic/terrain/Chunk.js';
 
-export class ChunkModel {
-  constructor(chunk, materials) {
+function pattern(colors, checker = false) {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 64;
+  const context = canvas.getContext('2d');
+
+  for (let row = 0; row < 2; row++) {
+    for (let col = 0; col < 2; col++) {
+      context.fillStyle = colors[checker ? (row + col) % 2 : col];
+      context.fillRect(col * 32, row * 32, 32, 32);
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.magFilter = THREE.NearestFilter;
+  return texture;
+}
+
+export class GreenHillChunkModel {
+  constructor(chunk) {
     this.chunk = chunk;
     this.initialX = chunk.initialX;
-    this.materials = materials;       // terra e grama, respectivamente
-    this.model = null;                // modelo final (Mesh)
+    this.materials = [ // terra e grama, respectivamente
+      new THREE.MeshStandardMaterial({ map: pattern(['#a56832', '#d49a56'], true), side: THREE.DoubleSide }),
+      new THREE.MeshStandardMaterial({ map: pattern(['#3a7d44', '#58a84f']), side: THREE.DoubleSide }),
+    ];  
+    this.model = null; // modelo final (Mesh)
   }
 
   getChunkModel() {
@@ -15,9 +37,10 @@ export class ChunkModel {
 
     const length = Chunk.length;
     const halfDepth = Chunk.depth / 2; // personagem se posiciona no meio de Z
-    const bottom = -Chunk.soilDepth;
     const leftHeight = this.chunk.getHeightAtX(this.initialX);
     const rightHeight = this.chunk.endY;
+    const leftBottom = leftHeight - Chunk.soilDepth;
+    const rightBottom = rightHeight - Chunk.soilDepth;
 
     // construção semelhante à do WebGL2
     const positions = [];  // X (0 a 40), Y (0 a -soilDepth), Z (-halfDepth, halfDepth) da geometria
@@ -47,17 +70,17 @@ export class ChunkModel {
     for (const z of [-halfDepth, halfDepth]) {
       face(
         //Inferior esq,   Inferior direito,       Superior direito,      Superior esquerdo
-        [[0, bottom, z], [length, bottom, z], [length, rightHeight, z], [0, leftHeight, z]],
-        [soilSide(0, bottom), soilSide(length, bottom), soilSide(length, rightHeight), soilSide(0, leftHeight)],
+        [[0, leftBottom, z], [length, rightBottom, z], [length, rightHeight, z], [0, leftHeight, z]],
+        [soilSide(0, leftBottom), soilSide(length, rightBottom), soilSide(length, rightHeight), soilSide(0, leftHeight)],
         0
       );
     }
 
     // DIANTEIRA E TRASEIRA (+X e -X)
-    for (const [x, y] of [[0, leftHeight], [length, rightHeight]]) {
+    for (const [x, topY, bottomY] of [[0, leftHeight, leftBottom], [length, rightHeight, rightBottom]]) {
       face(
-        [[x, bottom, -halfDepth], [x, bottom, halfDepth], [x, y, halfDepth], [x, y, -halfDepth]],
-        [soilEnd(-halfDepth, bottom), soilEnd(halfDepth, bottom), soilEnd(halfDepth, y), soilEnd(-halfDepth, y)],
+        [[x, bottomY, -halfDepth], [x, bottomY, halfDepth], [x, topY, halfDepth], [x, topY, -halfDepth]],
+        [soilEnd(-halfDepth, bottomY), soilEnd(halfDepth, bottomY), soilEnd(halfDepth, topY), soilEnd(-halfDepth, topY)],
         0
       );
     }
@@ -71,7 +94,7 @@ export class ChunkModel {
 
     // INFERIOR (-Y)
     face(
-      [[0, bottom, -halfDepth], [length, bottom, -halfDepth], [length, bottom, halfDepth], [0, bottom, halfDepth]],
+      [[0, leftBottom, -halfDepth], [length, rightBottom, -halfDepth], [length, rightBottom, halfDepth], [0, leftBottom, halfDepth]],
       [soilSide(0, -halfDepth), soilSide(length, -halfDepth), soilSide(length, halfDepth), soilSide(0, halfDepth)],
       0
     );

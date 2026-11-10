@@ -14,10 +14,10 @@ export const chunkStrategies = {
 };
 
 export class Chunk {
-  static length = 40;    // X 
-  static depth = 10;     // Z
-  static soilDepth = 3;  // Y (Ytop - Ybottom = soilDepth)
-  static theta = 0.05;
+  static length    = 40;   // X 
+  static depth     = 10;   // Z
+  static soilDepth = 3;    // Y (Ytop - Ybottom = soilDepth)
+  static theta     = 0.05;
 
   constructor(
     initialX,
