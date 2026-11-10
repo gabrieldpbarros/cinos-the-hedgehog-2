@@ -2,48 +2,43 @@ import { Level } from "./Level.js";
 import { SceneView } from "./rendering/SceneView.js";
 
 export class Game {
-  constructor(canvas) {
-    this.canvas = canvas;
-    this.state  = 'menu'; // menu | playing | paused | win | lose
+  constructor(canvas, input) {
+    this.canvas    = canvas;
+    this.state     = 'menu'; // menu | playing | paused | win | lose
+    this.mainInput = input;
+  }
+
+  getInputHandler() {
+    return this.mainInput;
   }
 
   async startGame() {
-    this.level  = new Level(); // depois fazemos um tratamento de modo de jogo
-    this.level.buildLevel();
-    this.drawScene();
+    this.level  = new Level(this.mainInput); // depois fazemos um tratamento de modo de jogo
+    await this.level.buildLevel();
+    this.scene = new SceneView(this.canvas);
+    this.level.sonic.update(0);
+    this.level.buzzBomber.update(0);
+    this.scene.drawChunks(this.level.terrain.chunks);
+    this.scene.drawEntity(this.level.sonic);
+    this.scene.drawEntity(this.level.buzzBomber);
+    this.scene.sync(this.level.sonic.logic.getPosition());
+    this.scene.render();
     this.state  = 'playing';
   }
 
-  update(dt, input) {
+  update(dt) {
     if (this.state !== 'playing') return;
-    this.player.update(dt, input);
-    this.drawScene();
+    this.level.player.updateEntity(dt);
+    this.level.enemy1.updateEntity(dt);
+    this.scene.sync(this.level.sonic.logic.getPosition());
+    this.scene.render();
   }
 
   switchCamera() {
-    this.scene.switchCamera();
+    this.scene?.switchCamera();
   }
 
-  resizeWindow(width, heigth) {
-    this.scene.resize(width, heigth);
-  }
-
-  getSnapshot() {
-    return {
-      state:  this.state,
-      player: this.player.getSnapshot(),
-    };
-  }
-
-  createAndLinkScene() {
-    this.scene = new SceneView(this.canvas);
-    this.scene.drawChunks(this.level.chunks);
-    this.scene.drawPlayer(this.player);
-  }
-
-  drawScene() {
-    if (!this.scene) this.createAndLinkScene();
-    this.scene.sync(this.getSnapshot());
-    this.scene.render();
+  resizeWindow(width, height) {
+    this.scene?.resize(width, height);
   }
 }

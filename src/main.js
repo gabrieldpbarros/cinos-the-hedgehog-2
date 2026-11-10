@@ -5,10 +5,10 @@ import { CONFIG } from './game/constants.js';
 
 const canvas = document.getElementById('canvas');
 
-const game = new Game(canvas);
 const input = new Input();
-
 input.attach(window);
+
+const game = new Game(canvas, input);
 
 // Optional: switch camera with "C"
 window.addEventListener('keydown', (e) => {
@@ -26,6 +26,6 @@ function loop() {
   requestAnimationFrame(loop);
   clock.update();
   const dt = Math.min(clock.getDelta(), CONFIG.maxDt);
-  game.update(dt, input);
+  game.update(dt);
 }
 loop();

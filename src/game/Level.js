@@ -1,54 +1,58 @@
-import { Chunk } from "./logic/terrain/Chunk.js";
-import { chunkStrategies } from "./logic/terrain/chunkStrategies.js";
+import { PlayerController } from "./logic/controllers/PlayerController.js";
+import { StaticController } from "./logic/controllers/StaticController.js";
+import { Terrain } from "./logic/terrain/Terrain.js";
+import { Sonic } from "./logic/entities/Sonic.js";
+import { BuzzBomber } from "./logic/entities/BuzzBomber.js";
+import { createSonicModel } from "./rendering/entities/SonicModel.js";
+import { createBuzzBomberModel } from "./rendering/entities/BuzzBomberModel.js";
+import { Entity } from "./entities/Entity.js";
+
+async function makeSonic() {
+  const sonicLogic = new Sonic(
+    0, 0, 0,
+    'player',
+    true,
+  );
+  const sonicModel = await createSonicModel();
+
+  return new Entity(
+    sonicLogic,
+    sonicModel
+  );
+}
+
+async function makeBuzzBomber() {
+  const buzzBomberLogic = new BuzzBomber(
+    5, 3, 0,
+    'enemy',
+    false,
+  );
+  const buzzBomberModel = await createBuzzBomberModel();
+
+  return new Entity(
+    buzzBomberLogic,
+    buzzBomberModel
+  );
+}
 
 export class Level {
-  static CHUNK_TYPES = {
-    "flat":      chunkStrategies.flat,
-    "ramp_up":   chunkStrategies.rampUp,
-    "ramp_down": chunkStrategies.rampDown,
-  }
-
-  constructor(finishX = null) { // a definir criterio de vitoria
+  constructor(mainInput, finishX = null) { // a definir criterio de vitoria
+    this.mainInput = mainInput;
     this.finishX = finishX;
   }
 
-  buildLevel() {
+  async buildLevel() {
+    // terrain
     this.startPosX = 0;
-    this.chunks    = this.createInitialChunks();
-    this.startPosY = this.chunks[0].getHeightAtX(this.startPosX);
+    this.terrain   = new Terrain(this.startPosX);
+    this.startPosY = this.terrain.getHeightAt(this.startPosX);
 
-    this.player = null // adicionar controlador de jogador
-  }
+    // entities
+    this.sonic      = await makeSonic();
+    this.buzzBomber = await makeBuzzBomber();
 
-  createInitialChunks() {
-    const chunks = [];
-  
-    const getRandomIndex = (ceil) => {
-      return Math.floor(Math.random() * ceil);
-    }
-  
-    let surfaceStart = this.startPosX - 10;
-    let baseY        = 0;
-    for (let i = 0; i < 5; i++) {
-      const startX = (this.startPosX - 10) + i * Chunk.length;
-      const randomChunkType = () => {
-        const keysArray = Object.keys(Level.CHUNK_TYPES);
-        const numKeys   = keysArray.length;
-  
-        return keysArray[getRandomIndex(numKeys)];
-      }
-  
-      const chunk = new Chunk(
-        startX,
-        Level.CHUNK_TYPES[randomChunkType()],
-        baseY,
-        surfaceStart,
-      );
-      chunks.push(chunk);
-      baseY        = chunk.endY;
-      surfaceStart = chunk.surfaceEnd;
-    }
-  
-    return chunks;
+    // controllers
+    this.player = new PlayerController(this.sonic, this.mainInput);
+    this.enemy1 = new StaticController(this.buzzBomber);
   }
 }
