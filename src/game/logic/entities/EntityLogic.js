@@ -13,6 +13,10 @@ export class EntityLogic {
     this.jumpSpeed = 0;
   }
 
+  getPosition() {
+    return this.position;
+  }
+
   setEventRegionMargin(marginX, marginY, marginZ) {
     this.eventRegionMargin = { x: marginX, y: marginY, z: marginZ };
   }
@@ -86,5 +90,9 @@ export class EntityLogic {
 
   async moveDepth(dt) {
     this.position.z += this.speedZ * dt;
+  }
+
+  update(dt) {
+    
   }
 }

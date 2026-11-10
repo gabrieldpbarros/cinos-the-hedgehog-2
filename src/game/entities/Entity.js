@@ -1,7 +1,4 @@
-import { EntityLogic } from "../logic/entities/EntityLogic.js";
-import { EntityModel } from "../rendering/entities/EntityModel.js";
-
-class Entity {
+export class Entity {
   constructor(logic, model) {
     this.logic = logic;
     this.model = model;
@@ -12,6 +9,17 @@ class Entity {
   }
 
   update(dt) {
-    
+    this.logic.update(dt);
+    const logicPosition = this.logic.getPosition();
+    this.model.setPosition(
+      logicPosition.x,
+      logicPosition.y,
+      logicPosition.z
+    );
+    this.model.update(dt);
+  }
+
+  getModel3D() {
+    return this.model;
   }
 }
