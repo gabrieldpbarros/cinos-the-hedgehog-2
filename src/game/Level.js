@@ -75,18 +75,11 @@ export class Level {
   }
 
   update(dt) {
+    this.sonic.logic.setMinX(this.terrain.chunks[0].initialX);
     this.player.updateEntity(dt);
     this.enemy1.updateEntity(dt);
 
     const sonicLogic = this.sonic.logic;
-    const minX = this.terrain.chunks[0].initialX;
-    if (sonicLogic.getPosition().x < minX) {
-      const { y, z } = sonicLogic.getPosition();
-      sonicLogic.setPosition(minX, y, z);
-      sonicLogic.setSpeed(0, sonicLogic.getSpeed().y, sonicLogic.getSpeed().z);
-      this.sonic.alignLogicAndModel();
-    }
-
     return this.terrain.update(sonicLogic.getPosition().x);
   }
 

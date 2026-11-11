@@ -28,6 +28,10 @@ export class EntityLogic {
     this.position.z = z;
   }
 
+  setMinX(minX) {
+    this.minX = minX;
+  }
+
   setEventRegionMargin(marginX, marginY, marginZ) {
     this.eventRegionMargin = { x: marginX, y: marginY, z: marginZ };
   }
@@ -88,7 +92,13 @@ export class EntityLogic {
   }
 
   moveHorizontal(dt) {
-    this.position.x += this.speed.x * dt;
+    const nextX = this.position.x + this.speed.x * dt;
+    if (this.minX !== undefined && nextX < this.minX) {
+      this.position.x = this.minX;
+      this.speed.x = 0;
+      return;
+    }
+    this.position.x = nextX;
   }
 
   moveVertical(dt) {
