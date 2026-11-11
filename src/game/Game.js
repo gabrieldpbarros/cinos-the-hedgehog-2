@@ -34,10 +34,17 @@ export class Game {
 
   update(dt) {
     if (this.state !== 'playing') return;
-    this.level.player.updateEntity(dt);
-    this.level.enemy1.updateEntity(dt);
-    this.scene.sync(this.level.sonic.logic.getPosition());
-    this.scene.render();
+    const newChunks = this.level.update(dt);
+    this.scene.updateChunks(newChunks);
+    if (this.level.sonic.logic.checkCollision(this.level.buzzBomber.logic)) {
+      this.state = 'lose';
+    }
+    this.syncScene();
+  }
+
+  getDistance() {
+    if (!this.level?.sonic) return 0;
+    return this.level.sonic.logic.getPosition().x - this.level.startPosX;
   }
 
   switchCamera() {
