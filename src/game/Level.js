@@ -7,11 +7,12 @@ import { createSonicModel } from "./rendering/entities/SonicModel.js";
 import { createBuzzBomberModel } from "./rendering/entities/BuzzBomberModel.js";
 import { Entity } from "./entities/Entity.js";
 
-async function makeSonic() {
+async function makeSonic(groundAt) {
   const sonicLogic = new Sonic(
     0, 0, 0,
     'player',
     true,
+    groundAt,
   );
   const sonicModel = await createSonicModel();
 
@@ -48,11 +49,47 @@ export class Level {
     this.startPosY = this.terrain.getHeightAt(this.startPosX);
 
     // entities
-    this.sonic      = await makeSonic();
+    this.entities   = [];
+    this.sonic      = await makeSonic((x) => {
+      const height = this.terrain.getHeightAt(x);
+      if (height === null) return null;
+
+      return { height, normal: this.terrain.getNormalVectorAt(x) };
+    });
     this.buzzBomber = await makeBuzzBomber();
+
+    this.entities.push(this.sonic);
+    this.entities.push(this.buzzBomber);
+
+    this.sonic.setOnGround(this.startPosY);
+    this.buzzBomber.setOnGround(
+      this.terrain.getHeightAt(this.buzzBomber.logic.getPosition().x) + 0.5
+    );
 
     // controllers
     this.player = new PlayerController(this.sonic, this.mainInput);
     this.enemy1 = new StaticController(this.buzzBomber);
+  }
+
+  update(dt) {
+    this.player.updateEntity(dt);
+    this.enemy1.updateEntity(dt);
+
+    const sonicLogic = this.sonic.logic;
+    const minX = this.terrain.chunks[0].initialX;
+    if (sonicLogic.getPosition().x < minX) {
+      const { y, z } = sonicLogic.getPosition();
+      sonicLogic.setPosition(minX, y, z);
+      sonicLogic.setSpeed(0, sonicLogic.getSpeed().y, sonicLogic.getSpeed().z);
+      this.sonic.alignLogicAndModel();
+    }
+
+    return this.terrain.update(sonicLogic.getPosition().x);
+  }
+
+  toggleHitboxes() {
+    for (let entity of this.entities) {
+      entity.toggleHitboxVisual();
+    }
   }
 }

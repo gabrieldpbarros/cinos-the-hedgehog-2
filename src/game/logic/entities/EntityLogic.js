@@ -1,30 +1,45 @@
+import { CONFIG } from "../../constants.js";
+
 export class EntityLogic {
-  constructor(initialX, initialY, initialZ, type, gravityAffects) {
+  constructor(initialX, initialY, initialZ, type, gravityAffects, groundAt = null) {
     this.position       = { x: initialX, y: initialY, z: initialZ }; // ponto material
     this.type           = type;
     this.gravityAffects = gravityAffects;
+    this.groundAt       = groundAt;
     this.inEventRegion  = new Set();
+    this.speed          = { x: 0, y: 0, z: 0 };
 
     if (gravityAffects) 
       this.onGround = true;
     else
       this.onGround = false;
 
-    this.jumpSpeed = 0;
+    this.currentActions = new Set();
+    this.jumpSpeed      = CONFIG.jumpVelocity;
   }
 
   getPosition() {
     return this.position;
   }
 
+  setPosition(x, y, z) {
+    this.position.x = x;
+    this.position.y = y;
+    this.position.z = z;
+  }
+
   setEventRegionMargin(marginX, marginY, marginZ) {
     this.eventRegionMargin = { x: marginX, y: marginY, z: marginZ };
   }
 
+  getSpeed() {
+    return this.speed;
+  }
+
   setSpeed(x, y, z) {
-    this.speedX = x;
-    this.speedY = y;
-    this.speedZ = z;
+    this.speed.x = x;
+    this.speed.y = y;
+    this.speed.z = z;
   }
 
   setHitbox(length, heigth, depth) {
@@ -66,33 +81,64 @@ export class EntityLogic {
     return isInXInterval && isInYInterval && isInZInterval;
   }
 
-  async moveHorizontal(dt) {
-    this.position.x += this.speedX * dt;
+  jump() {
+    if (!this.onGround) return;
+    this.onGround = false;
+    this.speed.y = this.jumpSpeed;
   }
 
-  async moveVertical(dt) {
-    if (!this.gravityAffects)
-      this.position.y += this.speedY * dt;
-    else {
-      // jump
-      if (this.onGround) {
+  moveHorizontal(dt) {
+    this.position.x += this.speed.x * dt;
+  }
+
+  moveVertical(dt) {
+    if (!this.gravityAffects) {
+      this.position.y += this.speed.y * dt;
+    } else {
+      const surface = this.groundAt?.(this.position.x) ?? null;
+
+      if (this.onGround && surface !== null) {
+        this.position.y = surface.height + this.hitboxDim.heigth / 2;
+        this.speed.y = -this.speed.x * surface.normal.x / surface.normal.y;
+      } else {
         this.onGround = false;
-        this.speedY   = this.jumpSpeed;
-      }
-      // fall
-      else {
-        // inserir verificação se está tocando no chão antes das próximas linhas
-        this.position.y += this.speedY * dt;
-        this.speedY     += -10 * dt // substituir -10 por velocidade de queda (gravidade)
+        this.position.y += this.speed.y * dt;
+        this.speed.y += CONFIG.gravity * dt;
+
+        if (surface !== null && this.speed.y <= 0 &&
+            this.position.y <= surface.height + this.hitboxDim.heigth / 2) {
+          this.position.y = surface.height + this.hitboxDim.heigth / 2;
+          this.speed.y = 0;
+          this.onGround = true;
+        }
       }
     }
   }
 
-  async moveDepth(dt) {
-    this.position.z += this.speedZ * dt;
+  moveDepth(dt) {
+    this.position.z += this.speed.z * dt;
   }
 
+  clearActions() {
+    this.currentActions.clear();
+  }
+
+  do(action) {
+    this.currentActions.add(action);
+  }
+
+  stop(action) {
+    this.currentActions.delete(action);
+  }
+
+  updateHorizontalSpeed() {}
+
   update(dt) {
-    
+    if (this.currentActions.has("JUMP")) this.jump();
+    this.updateHorizontalSpeed(dt);
+
+    this.moveHorizontal(dt);
+    this.moveVertical(dt);
+    this.moveDepth(dt);
   }
 }

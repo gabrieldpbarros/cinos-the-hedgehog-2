@@ -46,3 +46,28 @@ test('collision detects crossing and contained boxes without stored vertices', a
   await tall.moveHorizontal();
   assert.equal(wide.checkCollision(tall), false);
 });
+
+test('holding jump starts another jump after landing', () => {
+  const groundAt = () => ({ height: 0, normal: { x: 0, y: 1 } });
+  const sonic = new EntityLogic(0, 1, 0, 'player', true, groundAt);
+  sonic.setHitbox(1, 2, 1);
+
+  sonic.do('JUMP');
+  sonic.update(0.05);
+  assert.equal(sonic.onGround, false);
+  assert.ok(sonic.getPosition().y > 1);
+  assert.equal(sonic.getSpeed().y < sonic.jumpSpeed, true);
+
+  for (let i = 0; i < 30 && !sonic.onGround; i++) sonic.update(0.05);
+  assert.equal(sonic.onGround, true);
+  assert.equal(sonic.getPosition().y, 1);
+
+  sonic.update(0.05);
+  assert.equal(sonic.onGround, false);
+  assert.ok(sonic.getPosition().y > 1);
+
+  sonic.stop('JUMP');
+  for (let i = 0; i < 30 && !sonic.onGround; i++) sonic.update(0.05);
+  sonic.update(0.05);
+  assert.equal(sonic.onGround, true);
+});
