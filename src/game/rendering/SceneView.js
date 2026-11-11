@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { TerrainModel } from './terrain/TerrainModel.js';
+import { SceneLighting } from './SceneLighting.js';
 
 export class SceneView {
   constructor(canvas) {
@@ -11,19 +12,17 @@ export class SceneView {
       side: new THREE.PerspectiveCamera(60, 1, 0.1, 1000),
       oneQuarter: new THREE.PerspectiveCamera(60, 1, 0.1, 1000),
     };
-    this.cameras.side.position.set(0, 5, 12);
-    this.cameras.oneQuarter.position.set(-9, 6, 8); // editar para 1/4
+    this.cameras.side.position.set(0, 3, 12);
+    this.cameras.oneQuarter.position.set(-9, 4, 8); // editar para 1/4
 
     this.activeCamera = this.cameras.side;
 
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
 
-    // Lights
-    this.scene.add(new THREE.AmbientLight(0xffffff, 0.35));
-    const sun = new THREE.DirectionalLight(0xffffff, 1.0);
-    sun.position.set(5, 10, 5);
-    this.scene.add(sun);
+    this.lighting = new SceneLighting(this.scene);
 
     // Skybox
     this.skybox_loader = new THREE.TextureLoader();
@@ -46,8 +45,19 @@ export class SceneView {
     this.scene.add(this.terrainModel.getGround());
   }
 
+  updateChunks(chunks) {
+    this.terrainModel.updateGround(chunks);
+  }
+
   drawEntity(entity) {
-    this.scene.add(entity.getModel3D().getObject3D());
+    const model = entity.getModel3D().getObject3D();
+    model.traverse((object) => {
+      if (object.isMesh) {
+        object.castShadow = true;
+        object.receiveShadow = true;
+      }
+    });
+    this.scene.add(model);
   }
 
   resize(w, h) {
@@ -65,12 +75,14 @@ export class SceneView {
         : this.cameras.side;
   }
 
-  sync(playerPosition) {
+  sync(playerPosition, terrainY) {
     const { x } = playerPosition;
-    this.cameras.side.position.x = x;
-    this.cameras.side.lookAt(x, 1, 0);
-    this.cameras.oneQuarter.position.x = x - 9;
-    this.cameras.oneQuarter.lookAt(x, 1, 0);
+    this.cameras.side.position.set(x, terrainY + 4.5, 12);
+    this.cameras.side.lookAt(x, terrainY + 1, 0);
+    this.cameras.oneQuarter.position.set(x - 8, terrainY + 6, 8);
+    this.cameras.oneQuarter.lookAt(x, terrainY + 1, 0);
+
+    this.lighting.followTerrain(x, terrainY);
   }
 
   render() {

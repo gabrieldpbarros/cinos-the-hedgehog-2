@@ -21,9 +21,15 @@ export class Game {
     this.scene.drawChunks(this.level.terrain.chunks);
     this.scene.drawEntity(this.level.sonic);
     this.scene.drawEntity(this.level.buzzBomber);
-    this.scene.sync(this.level.sonic.logic.getPosition());
-    this.scene.render();
+    this.syncScene();
     this.state  = 'playing';
+  }
+
+  syncScene() {
+    const position = this.level.sonic.logic.getPosition();
+    const terrainY = this.level.terrain.getHeightAt(position.x) ?? position.y;
+    this.scene.sync(position, terrainY);
+    this.scene.render();
   }
 
   update(dt) {

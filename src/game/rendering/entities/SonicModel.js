@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { EntityModel } from "./EntityModel";
+import { EntityModel } from "./EntityModel.js";
 
 export async function createSonicModel() {
   const loader = new GLTFLoader();
@@ -24,5 +24,14 @@ class SonicModel extends EntityModel {
     box.setFromObject(model);
     model.position.y = -box.min.y - 0.5;
     model.rotation.y = Math.PI / 2;
+
+    model.traverse((object) => {
+      if (!object.isMesh) return;
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      for (const material of materials) {
+        material.metalness = 0.05;
+        material.roughness = 0.6;
+      }
+    });
   }
 }
