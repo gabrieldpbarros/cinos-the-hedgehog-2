@@ -30,10 +30,13 @@ async function makeBuzzBomber() {
   );
   const buzzBomberModel = await createBuzzBomberModel();
 
-  return new Entity(
+  const buzzBomber = new Entity(
     buzzBomberLogic,
     buzzBomberModel
   );
+  const { length, heigth, depth } = buzzBomber.logic.hitboxDim;
+  buzzBomber.setHitbox(length * 0.8, heigth, depth);
+  return buzzBomber;
 }
 
 export class Level {
