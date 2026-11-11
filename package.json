@@ -19,6 +19,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/gabrieldpbarros/cinos-the-hedgehog-2/issues"
   },

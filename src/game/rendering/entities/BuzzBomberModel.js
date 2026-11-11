@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { EntityModel } from "./EntityModel";
+import { EntityModel } from "./EntityModel.js";
 
 export async function createBuzzBomberModel() {
   const loader = new GLTFLoader();
