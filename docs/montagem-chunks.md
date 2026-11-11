@@ -1,21 +1,21 @@
 # Cálculo da geometria de um chunk genérico
 
-*Arquivo descrito:* [Chunk.js](../src/rendering/Chunk.js)
+*Arquivos descritos:* [Chunk.js](../src/game/logic/terrain/Chunk.js), [Terrain.js](../src/game/logic/terrain/Terrain.js), [GreenHillChunkModel.js](../src/game/rendering/terrain/GreenHillChunkModel.js) e [TerrainModel.js](../src/game/rendering/terrain/TerrainModel.js).
 
 ## Montagem da classe
 
-Cada chunk mede 40 unidades em X e 10 em Z. Sua base fica em Y = -3 (`soilDepth`), enquanto a altura do topo depende do tipo de chão gerado. Os valores comuns são definidos por `length`, `depth` e `soilDepth`.
+Cada chunk mede 40 unidades em X e 10 em Z. A face inferior fica sempre 3 unidades (`soilDepth`) abaixo da superfície em cada extremidade; ela acompanha a inclinação, em vez de ficar fixa em Y = -3. Os valores comuns são definidos por `Chunk.length`, `Chunk.depth` e `Chunk.soilDepth`.
 
-Para construir um chunk, devem ser definidos a coordenada X global de início (`initialX`), o tipo de chunk (`chunkType`), os materiais da terra e da grama (`materials`) e a distância acumulada sobre a superfície até o início do chunk (`surfaceStart`).
+Para construir o `Chunk` lógico, devem ser definidos a coordenada X global de início (`initialX`), a estratégia de relevo (`chunkType`), a altura da superfície nessa coordenada (`baseY`) e a distância acumulada sobre a superfície (`surfaceStart`). O ângulo `theta` é opcional e usa `Chunk.theta` por padrão. Os materiais pertencem ao modelo visual, não ao `Chunk` lógico.
 > `initialX` e `surfaceStart` coincidem enquanto o percurso anterior for plano e ambos usarem a mesma origem; após uma rampa, podem diferir.
 
-A classe guarda a `Mesh` final após sua criação e calcula a distância acumulada até o fim da superfície: `surfaceEnd = surfaceStart + Math.hypot(length, rise)`, em que `rise` é a diferença de altura entre as extremidades.
+`Chunk` guarda `endY` e calcula a distância acumulada até o fim da superfície: `surfaceEnd = surfaceStart + Math.hypot(length, rise)`, em que `rise = endY - baseY`. A estratégia fornece `heightAt` e `normalAt`; `getHeightAtX(x)` e `getNormalVector(x)` convertem o X global para o X local antes de consultá-la. A `Mesh` final fica em `GreenHillChunkModel`.
 > [!NOTE]
 > Enquanto não foi implementado um chunk curvo, o uso da hipotenusa é suficiente para o cálculo.
 
 ## Criação do chunk
 
-Dado que o objetivo da generalização em uma classe é facilitar a geração de instâncias aleatórias durante uma *run*, o método `getChunkModel` utiliza as informações do chunk para gerar **coordenadas locais**, com $\{x: 0 \leq x \leq 40\}$, base em $y=-3$, topo definido pelo tipo de chão e $\{z: -5 \leq z \leq 5\}$. Atualmente, o topo é construído a partir das alturas nas duas extremidades; uma curva exigirá pontos intermediários.
+Dado que o objetivo da generalização em uma classe é facilitar a geração de instâncias aleatórias durante uma *run*, `GreenHillChunkModel.getChunkModel()` utiliza as informações do `Chunk` para gerar **coordenadas locais**, com $\{x: 0 \leq x \leq 40\}$ e $\{z: -5 \leq z \leq 5\}$. Em cada ponta, a base é `altura da superfície - soilDepth`. Atualmente, as faces são construídas a partir das alturas nas duas extremidades; uma curva exigirá pontos intermediários.
 
 A criação da geometria do chunk prevê o uso de pontos para desenhar cada face do poliedro, uma vez que utilizamos a classe `BufferGeometry` do *Three.js*. Cada face é definida da mesma forma em que figuras são definidas em *WebGL*, por meio de triângulos.
 
@@ -23,7 +23,7 @@ Dessa forma, considerando a referência original do chão do jogo, sabemos que t
 
 ### Definição de uma face genérica
 
-Utilizamos a função `face` para popular os vetores `positions`, `uvs` e `indices` de acordo com cada coordenada local do modelo.
+Utilizamos a função interna `face` de `GreenHillChunkModel` para popular os vetores `positions`, `uvs` e `indices` de acordo com cada coordenada local do modelo.
 
 - `positions`: Contém as coordenadas locais de cada vértice da face;
 - `uvs`: Contém as coordenadas da textura correspondentes a cada vértice;
@@ -76,6 +76,4 @@ A partir daí, tratamos como uma geometria comum de *Three.js*, adicionando-a a 
 
 A fim de não sobrecarregar a GPU conforme a progressão do jogo, causada por chunks gerados já ultrapassados há muito pelo jogador, mantemos apenas cinco chunks carregados, destruindo o mais antigo quando é perdido de vista e gerando um novo logo à frente da fila de chunks.
 
-O tipo de chunk (reto, subida, descida) é definido aleatoriamente. Entretanto, possíveis quinas (transição de subida para descida ou descida para subida), adiciona-se um chunk de transição, evitando terrenos muito artificiais.
-> [!WARNING]
-> Esta etapa ainda falta ser implementada.
+`Terrain` mantém cinco `Chunk` lógicos e sorteia entre plano, subida e descida. Cada novo chunk começa em `lastChunk.initialX + Chunk.length`, recebe `baseY = lastChunk.endY` e `surfaceStart = lastChunk.surfaceEnd`. Quando o jogador alcança o início do terceiro chunk da lista, `Terrain.update(x)` acrescenta um novo e remove o primeiro; um `while` cobre avanços maiores em um quadro. O método retorna os chunks adicionados para `SceneView.updateChunks()`. `TerrainModel` cria as respectivas malhas, remove a malha mais antiga e libera sua geometria, materiais e texturas. A suavização de quinas entre rampas ainda não foi implementada.
