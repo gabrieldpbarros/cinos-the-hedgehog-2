@@ -6,6 +6,7 @@ export class Input {
   }
 
   _onKeyDown(e) {
+    if (['ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
     this.pressedKeys.add(e.code);
   }
 

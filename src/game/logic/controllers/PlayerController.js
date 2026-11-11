@@ -1,12 +1,12 @@
-import { Controller } from "./Controller";
+import { Controller } from "./Controller.js";
 
 export class PlayerController extends Controller {
   static AVAILABLE_INPUTS = new Map([
-    ["KeyA", "MOVE_LEFT"],
-    ["KeyD", "MOVE_RIGHT"],
-    ["Space", "JUMP"],
-    ["ShiftLeft", "BOOST"],
-    ["ControlLeft", "CROUCH"],
+    ["MOVE_LEFT", ["KeyA", "ArrowLeft"]],
+    ["MOVE_RIGHT", ["KeyD", "ArrowRight"]],
+    ["JUMP", ["Space"]],
+    ["BOOST", ["ShiftLeft", "ShiftRight"]],
+    ["CROUCH", ["ControlLeft", "ControlRight"]],
   ]);
 
   constructor(entity, inputListener) {
@@ -15,11 +15,8 @@ export class PlayerController extends Controller {
   }
 
   updateEntity(dt) {
-    for (let input of PlayerController.AVAILABLE_INPUTS.keys()) 
-      this.entity.handleAction(
-        PlayerController.AVAILABLE_INPUTS.get(input),
-        this.inputListener.isDown(input)
-      );
+    for (const [action, keys] of PlayerController.AVAILABLE_INPUTS)
+      this.entity.handleAction(action, keys.some((key) => this.inputListener.isDown(key)));
     
     this.entity.update(dt);
   }
