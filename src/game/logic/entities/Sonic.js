@@ -1,16 +1,46 @@
 import { CONFIG } from "../../constants.js";
 import { EntityLogic } from "./EntityLogic.js";
 
+const SPIN_HITBOX_HEIGHT_SCALE = 0.6;
+
 export class Sonic extends EntityLogic {
   constructor(...args) {
     super(...args);
     this.brakeStartSpeed = 0;
     this.brakeElapsed = 0;
+    this.brakeAnimationDirection = 0;
+  }
+
+  setHitbox(length, height, depth) {
+    super.setHitbox(length, height, depth);
+    this.standingHitboxHeight = height;
+  }
+
+  isSpinning() {
+    return !this.onGround || this.currentActions.has('JUMP');
+  }
+
+  isBraking() {
+    return this.brakeAnimationDirection !== 0;
+  }
+
+  update(dt) {
+    super.update(dt);
+    const height = this.isSpinning()
+      ? this.standingHitboxHeight * SPIN_HITBOX_HEIGHT_SCALE
+      : this.standingHitboxHeight;
+    if (height === this.hitboxDim.heigth) return;
+    if (this.onGround) this.position.y += (height - this.hitboxDim.heigth) / 2;
+    this.hitboxDim.heigth = height;
   }
 
   updateHorizontalSpeed(dt) {
     const direction = Number(this.currentActions.has("MOVE_RIGHT")) -
       Number(this.currentActions.has("MOVE_LEFT"));
+    if (this.onGround && !this.brakeAnimationDirection &&
+        Math.abs(this.speed.x) > 7 && direction * this.speed.x < 0) {
+      this.brakeAnimationDirection = Math.sign(this.speed.x);
+    }
     const speedLimit = this.currentActions.has("CROUCH")
       ? CONFIG.runSpeedLimit / 2
       : CONFIG.runSpeedLimit;
@@ -57,6 +87,12 @@ export class Sonic extends EntityLogic {
       const normal = this.groundAt?.(this.position.x)?.normal;
       // Projeta a gravidade na tangente da rampa e usa sua componente horizontal.
       if (normal) this.speed.x -= CONFIG.gravity * normal.x * normal.y * dt;
+    }
+
+    if (this.brakeAnimationDirection &&
+        (!this.onGround || this.speed.x * this.brakeAnimationDirection <= 0 ||
+          direction * this.brakeAnimationDirection > 0)) {
+      this.brakeAnimationDirection = 0;
     }
   }
 }

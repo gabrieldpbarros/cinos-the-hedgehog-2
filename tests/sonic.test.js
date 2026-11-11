@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import * as THREE from 'three';
+import { Entity } from '../src/game/entities/Entity.js';
 import { Sonic } from '../src/game/logic/entities/Sonic.js';
 import { Chunk, chunkStrategies } from '../src/game/logic/terrain/Chunk.js';
+import { EntityModel } from '../src/game/rendering/entities/EntityModel.js';
 
 const groundAt = () => ({ height: 0, normal: { x: 0, y: 1 } });
 
@@ -10,6 +13,27 @@ function makeSonic(surfaceAt = groundAt) {
   sonic.setHitbox(1, 2, 1);
   return sonic;
 }
+
+test('spin shortens only Sonic hitbox height and restores it on landing', () => {
+  const logic = new Sonic(0, 0, 0, 'player', true, groundAt);
+  const model = new EntityModel(new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1)));
+  const sonic = new Entity(logic, model);
+  sonic.setOnGround(0);
+
+  logic.jump();
+  sonic.update(0);
+  assert.equal(logic.hitboxDim.heigth, 1.2);
+  assert.equal(model.hitboxHelper.box.getSize(new THREE.Vector3()).y, 1.2);
+  assert.equal(logic.hitboxDim.length, 1);
+  assert.equal(logic.hitboxDim.depth, 1);
+
+  logic.onGround = true;
+  logic.setSpeed(0, 0, 0);
+  sonic.update(0);
+  assert.equal(logic.hitboxDim.heigth, 2);
+  assert.equal(model.hitboxHelper.box.getSize(new THREE.Vector3()).y, 2);
+  assert.equal(logic.position.y - logic.hitboxDim.heigth / 2, 0);
+});
 
 test('movement input reaches 20 u/s without cutting off existing momentum', () => {
   const sonic = makeSonic();
@@ -36,6 +60,27 @@ test('crouch caps horizontal speed at half the normal running limit', () => {
   sonic.do('MOVE_RIGHT');
   sonic.updateHorizontalSpeed(0.05);
   assert.equal(sonic.getSpeed().x, 10);
+});
+
+test('opposite input above 7 u/s keeps braking animation until Sonic stops', () => {
+  const sonic = makeSonic();
+  sonic.do('MOVE_LEFT');
+  sonic.setSpeed(7, 0, 0);
+  sonic.updateHorizontalSpeed(0);
+  assert.equal(sonic.isBraking(), false);
+
+  sonic.setSpeed(8, 0, 0);
+  sonic.updateHorizontalSpeed(0);
+  assert.equal(sonic.isBraking(), true);
+
+  sonic.stop('MOVE_LEFT');
+  sonic.setSpeed(3, 0, 0);
+  sonic.updateHorizontalSpeed(0);
+  assert.equal(sonic.isBraking(), true);
+
+  sonic.setSpeed(0, 0, 0);
+  sonic.updateHorizontalSpeed(0);
+  assert.equal(sonic.isBraking(), false);
 });
 
 test('ground braking stops from 20 u/s in four seconds and strengthens near zero', () => {

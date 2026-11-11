@@ -5,12 +5,16 @@ export class Entity {
 
     // cria hitbox de acordo com modelo da entidade
     const { length, height, depth, centerPos } = this.model.getObjectDim();
-    this.logic.setHitbox(length, height, depth);
-    this.model.setHitboxSize(length, height, depth);
+    this.setHitbox(length, height, depth);
     this.model.setVisualOffset(-centerPos.x, -centerPos.y, -centerPos.z);
 
     // alinha posicao do modelo com logica interna
     this.alignLogicAndModel();
+  }
+
+  setHitbox(length, height, depth) {
+    this.logic.setHitbox(length, height, depth);
+    this.model.setHitboxSize(length, height, depth);
   }
 
   alignLogicAndModel() {
@@ -40,9 +44,14 @@ export class Entity {
   }
 
   update(dt) {
+    const previousHeight = this.logic.hitboxDim.heigth;
     this.logic.update(dt);
+    if (this.logic.hitboxDim.heigth !== previousHeight) {
+      const { length, heigth, depth } = this.logic.hitboxDim;
+      this.model.setHitboxSize(length, heigth, depth);
+    }
     this.alignLogicAndModel();
-    this.model.update(dt);
+    this.model.update(dt, this.logic);
   }
 
   getModel3D() {
