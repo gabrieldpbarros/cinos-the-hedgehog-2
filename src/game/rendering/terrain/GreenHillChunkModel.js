@@ -108,6 +108,7 @@ export class GreenHillChunkModel {
 
     this.model = new THREE.Mesh(geometry, this.materials);
     this.model.position.x = this.initialX;
+    this.model.receiveShadow = true;
     return this.model;
   }
 
@@ -115,6 +116,10 @@ export class GreenHillChunkModel {
     if (!this.model) return;
     this.model.removeFromParent();
     this.model.geometry.dispose();
+    for (const material of this.materials) {
+      material.map.dispose();
+      material.dispose();
+    }
     this.model = null;
   }
 }

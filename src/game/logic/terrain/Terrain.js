@@ -1,4 +1,4 @@
-import { Chunk, chunkStrategies } from "./Chunk";
+import { Chunk, chunkStrategies } from "./Chunk.js";
 
 export class Terrain {
   static CHUNK_TYPES = {
@@ -44,6 +44,38 @@ export class Terrain {
     return chunks;
   }
 
+  _appendNewChunk() {
+    const lastChunk  = this.chunks.at(-1);
+    let startX       = lastChunk.initialX + Chunk.length;
+    let baseY        = lastChunk.endY;
+    let surfaceStart = lastChunk.surfaceEnd;
+
+    const getRandomIndex = (ceil) => {
+      return Math.floor(Math.random() * ceil);
+    }
+
+    const randomChunkType = () => {
+      const keysArray = Object.keys(Terrain.CHUNK_TYPES);
+      const numKeys   = keysArray.length;
+
+      return keysArray[getRandomIndex(numKeys)];
+    }
+
+    const chunk = new Chunk(
+      startX,
+      Terrain.CHUNK_TYPES[randomChunkType()],
+      baseY,
+      surfaceStart,
+    );
+
+    this.chunks.push(chunk);
+    return chunk;
+  }
+
+  _destroyFirstChunk() {
+    this.chunks.shift();
+  }
+
   getHeightAt(x) {
     for (let chunk of this.chunks) {
       let initialX = chunk.initialX;
@@ -53,5 +85,23 @@ export class Terrain {
     }
 
     return null;
+  }
+
+  getNormalVectorAt(x) {
+    for (let chunk of this.chunks) {
+      let initialX = chunk.initialX;
+
+      if (x >= initialX && x <= initialX + Chunk.length)
+        return chunk.getNormalVector(x);
+    }
+  }
+
+  update(x) {
+    const added = [];
+    while (x >= this.chunks[2].initialX) {
+      added.push(this._appendNewChunk());
+      this._destroyFirstChunk();
+    }
+    return added;
   }
 }

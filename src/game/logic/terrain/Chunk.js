@@ -1,15 +1,15 @@
 export const chunkStrategies = {
   flat: { 
-    heightAt: (X, baseY) => baseY,
-    normalAt: (X, theta) => {}
+    heightAt: (_x, baseY) => baseY,
+    normalAt: () => ({ x: 0, y: 1, z: 0 })
   },
   rampUp: { 
-    heightAt: (X, baseY, theta) => (X * Math.tan(theta)) + baseY,
-    normalAt: () => {}
+    heightAt: (_x, baseY, theta) => (_x * Math.tan(theta)) + baseY,
+    normalAt: (_x, theta) => ({ x: -Math.sin(theta), y: Math.cos(theta), z: 0 })
   },
   rampDown: {
-    heightAt: (X, baseY, theta) => baseY - X * Math.tan(theta),
-    normalAt: (X, theta) => {}
+    heightAt: (_x, baseY, theta) => baseY - _x * Math.tan(theta),
+    normalAt: (_x, theta) => ({ x: Math.sin(theta), y: Math.cos(theta), z: 0 })
   }
 };
 
@@ -56,6 +56,6 @@ export class Chunk {
   }
 
   getNormalVector(x) {
-    
+    return this.chunkType.normalAt(x - this.initialX, this.theta);
   }
 }

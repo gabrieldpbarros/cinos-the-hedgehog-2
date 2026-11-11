@@ -1,60 +1,63 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import * as THREE from 'three';
-import { Chunk } from '../src/game/Chunk.js';
-import { Game } from '../src/game/Game.js';
-import { chunkStrategies } from '../src/game/strategies/chunkStrategies.js';
-import { ChunkModel } from '../src/rendering/ChunkModel.js';
+import { Chunk, chunkStrategies } from '../src/game/logic/terrain/Chunk.js';
+import { Terrain } from '../src/game/logic/terrain/Terrain.js';
+import { TerrainModel } from '../src/game/rendering/terrain/TerrainModel.js';
 
-test('chunks share edge heights and keep texture distance across ramps', () => {
+globalThis.document = {
+  createElement: () => ({
+    width: 0,
+    height: 0,
+    getContext: () => ({ fillRect() {} }),
+  }),
+};
+
+test('chunks keep height and texture distance continuous across ramps', () => {
   const theta = Math.atan(2 / Chunk.length);
   const flat = new Chunk(-10, chunkStrategies.flat, 0);
   const up = new Chunk(30, chunkStrategies.rampUp, flat.endY, flat.surfaceEnd, theta);
   const down = new Chunk(70, chunkStrategies.rampDown, up.endY, up.surfaceEnd, theta);
-  const next = new Chunk(110, chunkStrategies.flat, down.endY, down.surfaceEnd);
 
-  assert.equal(flat.getHeightAtX(0), 0);
   assert.equal(up.getHeightAtX(up.initialX), flat.endY);
   assert.ok(Math.abs(up.endY - 2) < 1e-12);
   assert.equal(down.getHeightAtX(down.initialX), up.endY);
   assert.ok(Math.abs(down.endY) < 1e-12);
-  assert.equal(next.baseY, down.endY);
   assert.equal(up.surfaceStart, flat.surfaceEnd);
   assert.ok(Math.abs(up.surfaceEnd - up.surfaceStart - Math.hypot(Chunk.length, 2)) < 1e-12);
-
-  const materials = [new THREE.MeshBasicMaterial(), new THREE.MeshBasicMaterial()];
-  const flatModel = new ChunkModel(flat, materials);
-  const upModel = new ChunkModel(up, materials);
-  const mesh = upModel.getChunkModel();
-  const positions = mesh.geometry.getAttribute('position');
-  const uvs = mesh.geometry.getAttribute('uv');
-
-  assert.equal(upModel.getChunkModel(), mesh);
-  assert.equal(mesh.position.x, up.initialX);
-  assert.equal(positions.getY(16), up.baseY);
-  assert.equal(positions.getY(17), up.endY);
-  assert.ok(Math.abs(uvs.getX(16) - up.surfaceStart / 2.9) < 0.00001);
-  assert.ok(Math.abs(uvs.getX(17) - up.surfaceEnd / 2.9) < 0.00001);
-
-  const group = new THREE.Group();
-  group.add(flatModel.getChunkModel(), mesh);
-  flatModel.destroyChunk();
-  upModel.destroyChunk();
-  assert.equal(group.children.length, 0);
 });
 
-test('Game creates consecutive chunks with continuous heights', () => {
-  const game = new Game(null);
-  game.startPosX = 0;
-  const chunks = game.createInitialChunks();
+test('terrain and visuals recycle five chunks when Sonic reaches the third', () => {
+  const terrain = new Terrain(0);
+  const visual = new TerrainModel('green_hill');
+  visual.createGround(terrain.chunks);
 
-  assert.equal(chunks.length, 5);
-  assert.equal(chunks[0].initialX, -10);
-  assert.equal(chunks[0].baseY, 0);
+  assert.equal(terrain.update(69).length, 0);
+  const first = visual.chunkModels[0];
+  let disposed = 0;
+  first.model.geometry.addEventListener('dispose', () => disposed++);
+  for (const material of first.materials) {
+    material.addEventListener('dispose', () => disposed++);
+    material.map.addEventListener('dispose', () => disposed++);
+  }
 
-  for (let i = 1; i < chunks.length; i++) {
-    assert.equal(chunks[i].initialX, chunks[i - 1].initialX + Chunk.length);
-    assert.equal(chunks[i].baseY, chunks[i - 1].endY);
-    assert.equal(chunks[i].surfaceStart, chunks[i - 1].surfaceEnd);
+  const added = terrain.update(70);
+  visual.updateGround(added);
+  assert.equal(added.length, 1);
+  assert.equal(added[0].initialX, 190);
+  assert.equal(terrain.chunks.length, 5);
+  assert.equal(visual.getGround().children.length, 5);
+  assert.equal(disposed, 5);
+
+  const more = terrain.update(190);
+  visual.updateGround(more);
+  assert.equal(more.length, 3);
+  assert.equal(visual.getGround().children.length, 5);
+  for (let i = 0; i < 5; i++) {
+    assert.equal(visual.chunkModels[i].chunk, terrain.chunks[i]);
+    if (i > 0) {
+      assert.equal(terrain.chunks[i].initialX, terrain.chunks[i - 1].initialX + Chunk.length);
+      assert.equal(terrain.chunks[i].baseY, terrain.chunks[i - 1].endY);
+      assert.equal(terrain.chunks[i].surfaceStart, terrain.chunks[i - 1].surfaceEnd);
+    }
   }
 });
