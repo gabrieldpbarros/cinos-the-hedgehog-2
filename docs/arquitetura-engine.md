@@ -112,6 +112,6 @@ Os modelos de Sonic e BuzzBomber são carregados por fábricas assíncronas ante
 
 ## Estado atual, testes e pontos de extensão
 
-`Game.state` começa como `menu`, passa a `playing` após o carregamento e vira `lose` na colisão. O HUD mostra distância, velocidade e estado. Em derrota, `main.js` espera o Espaço ser solto antes de aceitar outro pressionamento para recarregar a página. O construtor de `Level` aceita `finishX`, mas esse parâmetro ainda não produz vitória; modo distância, modo infinito selecionável e pausa também não estão implementados. `Crab` e `createCrabModel()` são esboços ainda fora da partida.
+`Game.state` começa como `menu`, passa a `playing` após o carregamento e vira `lose` na colisão. O HUD mostra distância, velocidade e estado. Em derrota, `main.js` espera o Espaço ser solto antes de aceitar outro pressionamento para recarregar a página. O construtor de `Level` aceita `finishX`, mas esse parâmetro ainda não produz vitória; modo distância, modo infinito selecionável e pausa também não estão implementados.
 
 Os testes em `tests/` usam o test runner do Node. Eles verificam chunks, colisão, controle, física, animações e luzes com objetos simples. Para mudanças na engine, executem `npm test`, `npx eslint src tests` e `npm run build`; depois testem a cena em navegador, inclusive rampas, troca de câmera e tamanho da janela. A construção do modo distância deve se concentrar em `Game`/`Level`; uma nova entidade deve fornecer lógica, modelo e controlador quando necessário, preservando a separação de responsabilidades acima.
