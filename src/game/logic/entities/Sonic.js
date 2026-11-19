@@ -8,6 +8,7 @@ export class Sonic extends EntityLogic {
     super(...args);
     this.brakeStartSpeed = 0;
     this.brakeElapsed = 0;
+    this.brakeScale = 1;
     this.brakeAnimationDirection = 0;
   }
 
@@ -48,14 +49,20 @@ export class Sonic extends EntityLogic {
     if (this.speed.x === 0 || direction * this.speed.x > 0) {
       this.brakeStartSpeed = 0;
       this.brakeElapsed = 0;
+      this.brakeScale = 1;
     }
 
+    const opposing = direction !== 0 && direction * this.speed.x < 0;
     if (this.speed.x !== 0 && direction * this.speed.x <= 0) {
-      if (this.brakeStartSpeed === 0) this.brakeStartSpeed = this.speed.x;
+      if (this.brakeStartSpeed === 0 || (opposing && this.brakeScale !== CONFIG.reverseBrakeScale)) {
+        this.brakeStartSpeed = this.speed.x;
+        this.brakeElapsed = 0;
+        this.brakeScale = opposing ? CONFIG.reverseBrakeScale : 1;
+      }
       // O ar tem a frenagem mais lenta; seu tempo total ainda deve caber no limite.
       const duration = Math.min(
         CONFIG.maxBrakeTime * CONFIG.airBrakeFactor,
-        CONFIG.brakeTime * Math.abs(this.brakeStartSpeed) / CONFIG.runSpeedLimit,
+        CONFIG.brakeTime * this.brakeScale * Math.abs(this.brakeStartSpeed) / CONFIG.runSpeedLimit,
       );
       const previousProgress = this.brakeElapsed / duration;
       this.brakeElapsed = Math.min(
@@ -64,15 +71,17 @@ export class Sonic extends EntityLogic {
       );
       if (duration - this.brakeElapsed < 1e-9) this.brakeElapsed = duration;
       const progress = this.brakeElapsed / duration;
-      const brakeLoss = Math.abs(this.brakeStartSpeed) *
-        (progress * progress - previousProgress * previousProgress);
+      const brakeLoss = Math.abs(this.brakeStartSpeed) * (progress - previousProgress);
       this.speed.x = Math.sign(this.speed.x) *
         Math.max(0, Math.abs(this.speed.x) - brakeLoss);
       if (progress === 1) this.speed.x = 0;
     }
 
     if (direction !== 0 && direction * this.speed.x < speedLimit) {
-      const nextSpeed = this.speed.x + direction * CONFIG.runAcceleration * dt;
+      const ratio = Math.min(1, Math.abs(this.speed.x) / speedLimit);
+      const acceleration = CONFIG.launchAcceleration
+        + (CONFIG.runAcceleration - CONFIG.launchAcceleration) * ratio;
+      const nextSpeed = this.speed.x + direction * acceleration * dt;
       this.speed.x = direction > 0
         ? Math.min(nextSpeed, speedLimit)
         : Math.max(nextSpeed, -speedLimit);
