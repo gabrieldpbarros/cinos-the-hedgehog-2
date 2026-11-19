@@ -49,6 +49,41 @@ export class SceneView {
     this.terrainModel.updateGround(chunks);
   }
 
+  drawFinishLine(x, groundY) {
+    const gate = new THREE.Group();
+    const postMaterial = new THREE.MeshStandardMaterial({ color: 0xe53935 });
+    const darkMaterial = new THREE.MeshStandardMaterial({ color: 0x171717 });
+    const lightMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+
+    // Pórticos e faixa quadriculada posicionada no X da chegada.
+    for (const z of [-3.5, 3.5]) {
+      const post = new THREE.Mesh(
+        new THREE.BoxGeometry(0.3, 4.5, 0.3),
+        postMaterial
+      );
+      post.position.set(x, groundY + 2.25, z);
+      gate.add(post);
+    }
+
+    for (let row = 0; row < 12; row++) {
+      for (let column = 0; column < 2; column++) {
+        const square = new THREE.Mesh(
+          new THREE.BoxGeometry(0.22, 0.38, 0.38),
+          (row + column) % 2 === 0 ? lightMaterial : darkMaterial
+        );
+        square.position.set(
+          x,
+          groundY + 4.37 - row * 0.38,
+          (column - 0.5) * 0.4
+        );
+        gate.add(square);
+      }
+    }
+
+    this.scene.add(gate);
+    this.finishLine = gate;
+  }
+
   drawEntity(entity) {
     const model = entity.getModel3D().getObject3D();
     model.traverse((object) => {

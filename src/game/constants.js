@@ -1,4 +1,5 @@
 export const CONFIG = {
+  levelDistance: 1000, // distância horizontal para concluir a fase (metros/unidades),
   gravity: -18,        // units/sec^2
   jumpVelocity: 12,    // units/sec
   maxDt: 0.05,
