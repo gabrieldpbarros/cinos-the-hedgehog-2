@@ -2,9 +2,9 @@
 
 ## Objetivo e estado atual
 
-O projeto é um jogo 3D de corrida inspirado no protótipo feito em Scratch e na estética de Green Hill. O Sonic pode andar nos dois sentidos, acelerar, frear e pular; a distância percorrida aparece no HUD. Tocar o BuzzBomber causa derrota e a tecla Espaço reinicia a página. Há duas câmeras em perspectiva, luz ambiente e duas luzes direcionais, terreno texturizado e modelos 3D para Sonic e BuzzBomber.
+O projeto é um jogo 3D de corrida inspirado no protótipo feito em Scratch e na estética de Green Hill. O Sonic pode andar nos dois sentidos, acelerar, frear e pular; a distância percorrida aparece no HUD. Tocar o BuzzBomber causa derrota e a tecla Espaço reinicia a página. A tecla P pausa e retoma a partida. Há duas câmeras em perspectiva, luz ambiente e duas luzes direcionais, terreno texturizado e modelos 3D para Sonic e BuzzBomber.
 
-Ainda faltam o modo com distância-alvo e vitória, o modo infinito selecionável, a geração de obstáculos ao longo do percurso e a apresentação final. O estado inicial `menu` é usado apenas durante o carregamento; pausa e vitória constam como possibilidades no código, mas não têm fluxo implementado. Não descrevam esses itens como concluídos nas entregas.
+Ainda faltam o modo com distância-alvo e vitória, o modo infinito selecionável, a geração de obstáculos ao longo do percurso e a apresentação final. O estado inicial `menu` é usado apenas durante o carregamento; a pausa já tem fluxo, mas a vitória ainda consta apenas como possibilidade no código. Não descrevam esses itens como concluídos nas entregas.
 
 ## Decisões de projeto
 

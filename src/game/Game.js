@@ -47,11 +47,21 @@ export class Game {
     return this.level.sonic.logic.getPosition().x - this.level.startPosX;
   }
 
+  togglePause() {
+    if (this.state === 'playing') {
+      this.state = 'paused';
+    } else if (this.state === 'paused') {
+      this.state = 'playing';
+    }
+  }
+
   switchCamera() {
     this.scene?.switchCamera();
+    if (this.state !== 'playing') this.scene?.render();
   }
 
   resizeWindow(width, height) {
     this.scene?.resize(width, height);
+    if (this.state !== 'playing') this.scene?.render();
   }
 }

@@ -16,6 +16,7 @@ let restartReady = false;
 // Optional: switch camera with "C"
 window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyC') game.switchCamera();
+  if (e.code === 'KeyP' && !e.repeat) game.togglePause();
   if (e.code === 'Space' && game.state === 'lose' && restartReady) {
     window.location.reload();
   }
@@ -27,6 +28,23 @@ window.addEventListener('resize', () => {
 
 game.startGame();
 const clock = new THREE.Timer();
+let overlayState = null;
+
+function updateOverlay(distance) {
+  if (game.state === overlayState) return;
+  overlayState = game.state;
+
+  overlay.style.display =
+    game.state === 'lose' || game.state === 'paused' ? 'flex' : 'none';
+
+  if (game.state === 'lose') {
+    overlay.innerHTML = `Derrota!<br><small>Distância: ${distance} m - Espaço para reiniciar</small>`;
+  } else if (game.state === 'paused') {
+    overlay.innerHTML = 'Pausado<br><small>P para continuar</small>';
+  } else {
+    overlay.innerHTML = '';
+  }
+}
 
 function loop() {
   requestAnimationFrame(loop);
@@ -36,10 +54,10 @@ function loop() {
   if (game.state === 'lose' && !input.isDown('Space')) restartReady = true;
   const distance = game.getDistance().toFixed(1);
   const speed = Math.abs(game.level?.sonic?.logic.getSpeed().x ?? 0).toFixed(1);
-  hud.textContent = `Distância: ${distance} m  Vel: ${speed} u/s  Estado: ${game.state}`;
-  overlay.style.display = game.state === 'lose' ? 'flex' : 'none';
-  if (game.state === 'lose') {
-    overlay.innerHTML = `Derrota!<br><small>Distância: ${distance} m - Espaço para reiniciar</small>`;
-  }
+  const hint =
+    game.state === 'playing' ? '  P: pausar' :
+    game.state === 'paused' ? '  P: continuar' : '';
+  hud.textContent = `Distância: ${distance} m  Vel: ${speed} u/s  Estado: ${game.state}${hint}`;
+  updateOverlay(distance);
 }
 loop();
