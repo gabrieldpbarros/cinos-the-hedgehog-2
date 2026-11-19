@@ -9,6 +9,7 @@ test('every enemy updates, and those behind the first chunk are removed', () => 
   level.sonic = { logic: { setMinX() {}, getPosition: () => ({ x: 200 }) } };
   level.player = { updateEntity() {} };
   level.entities = [];
+  level.syncRingChunks = () => ({ added: [], removed: [] });
 
   const updates = [];
   const makeEnemy = (x) => {

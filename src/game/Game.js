@@ -17,8 +17,7 @@ export class Game {
     this.level.sonic.update(0);
     for (const enemy of this.level.enemies) enemy.update(0);
     this.scene.drawChunks(this.level.terrain.chunks);
-    this.scene.drawEntity(this.level.sonic);
-    for (const enemy of this.level.enemies) this.scene.drawEntity(enemy);
+    for (const entity of this.level.entities) this.scene.drawEntity(entity);
     this.syncScene();
     this.state  = 'playing';
   }
@@ -33,9 +32,10 @@ export class Game {
   update(dt) {
     if (this.state !== 'playing') return;
     this.elapsedTime += dt;
-    const { chunks, removed } = this.level.update(dt);
+    const { chunks, removed, added = [] } = this.level.update(dt);
     this.scene.updateChunks(chunks);
     for (const enemy of removed) this.scene.removeEntity(enemy);
+    for (const entity of added) this.scene.drawEntity(entity);
     const finishHeight = this.level.terrain.getHeightAt(this.level.finishX);
     if (!this.finishLineDrawn && finishHeight !== null) {
       this.scene.drawFinishLine(this.level.finishX, finishHeight);
