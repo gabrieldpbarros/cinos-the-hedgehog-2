@@ -20,14 +20,23 @@ function pattern(colors, checker = false) {
   return texture;
 }
 
+let sharedMaterials;
+
+function getMaterials() {
+  if (!sharedMaterials) {
+    sharedMaterials = [ // terra e grama, respectivamente
+      new THREE.MeshStandardMaterial({ map: pattern(['#a56832', '#d49a56'], true), side: THREE.DoubleSide }),
+      new THREE.MeshStandardMaterial({ map: pattern(['#3a7d44', '#58a84f']), side: THREE.DoubleSide }),
+    ];
+  }
+  return sharedMaterials;
+}
+
 export class GreenHillChunkModel {
   constructor(chunk) {
     this.chunk = chunk;
     this.initialX = chunk.initialX;
-    this.materials = [ // terra e grama, respectivamente
-      new THREE.MeshStandardMaterial({ map: pattern(['#a56832', '#d49a56'], true), side: THREE.DoubleSide }),
-      new THREE.MeshStandardMaterial({ map: pattern(['#3a7d44', '#58a84f']), side: THREE.DoubleSide }),
-    ];  
+    this.materials = getMaterials();
     this.model = null; // modelo final (Mesh)
   }
 
@@ -116,10 +125,6 @@ export class GreenHillChunkModel {
     if (!this.model) return;
     this.model.removeFromParent();
     this.model.geometry.dispose();
-    for (const material of this.materials) {
-      material.map.dispose();
-      material.dispose();
-    }
     this.model = null;
   }
 }

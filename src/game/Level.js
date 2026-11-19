@@ -62,25 +62,39 @@ export class Level {
     this.buzzBomber = await makeBuzzBomber();
 
     this.entities.push(this.sonic);
-    this.entities.push(this.buzzBomber);
+    this.enemies = [this.buzzBomber];
+    for (const enemy of this.enemies) {
+      enemy.controller = new StaticController(enemy);
+      this.entities.push(enemy);
+    }
 
     this.sonic.setOnGround(this.startPosY);
-    this.buzzBomber.setOnGround(
-      this.terrain.getHeightAt(this.buzzBomber.logic.getPosition().x) + 0.5
-    );
+    for (const enemy of this.enemies) {
+      enemy.setOnGround(this.terrain.getHeightAt(enemy.logic.getPosition().x) + 0.5);
+    }
 
     // controllers
     this.player = new PlayerController(this.sonic, this.mainInput);
-    this.enemy1 = new StaticController(this.buzzBomber);
   }
 
   update(dt) {
     this.sonic.logic.setMinX(this.terrain.chunks[0].initialX);
     this.player.updateEntity(dt);
-    this.enemy1.updateEntity(dt);
+    for (const enemy of this.enemies) enemy.controller.updateEntity(dt);
 
-    const sonicLogic = this.sonic.logic;
-    return this.terrain.update(sonicLogic.getPosition().x);
+    const chunks = this.terrain.update(this.sonic.logic.getPosition().x);
+    const minX = this.terrain.chunks[0].initialX;
+    const removed = [];
+    this.enemies = this.enemies.filter((enemy) => {
+      if (enemy.logic.getPosition().x >= minX) return true;
+      removed.push(enemy);
+      return false;
+    });
+    if (removed.length > 0) {
+      const gone = new Set(removed);
+      this.entities = this.entities.filter((entity) => !gone.has(entity));
+    }
+    return { chunks, removed };
   }
 
   toggleHitboxes() {

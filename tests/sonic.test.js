@@ -35,6 +35,18 @@ test('spin shortens only Sonic hitbox height and restores it on landing', () => 
   assert.equal(logic.position.y - logic.hitboxDim.heigth / 2, 0);
 });
 
+test('holding run from rest is quick and still eases near the limit', () => {
+  const sonic = makeSonic();
+  sonic.do('MOVE_RIGHT');
+  for (let i = 0; i < 20; i++) sonic.update(0.05);
+  assert.ok(sonic.getSpeed().x > 8);
+  assert.ok(sonic.getSpeed().x < 12);
+
+  for (let i = 0; i < 60; i++) sonic.update(0.05);
+  assert.ok(sonic.getSpeed().x > 19);
+  assert.ok(sonic.getSpeed().x <= 20);
+});
+
 test('movement input reaches 20 u/s without cutting off existing momentum', () => {
   const sonic = makeSonic();
   sonic.setSpeed(19.95, 0, 0);
@@ -83,7 +95,7 @@ test('opposite input above 7 u/s keeps braking animation until Sonic stops', () 
   assert.equal(sonic.isBraking(), false);
 });
 
-test('ground braking stops from 20 u/s in four seconds and strengthens near zero', () => {
+test('ground braking stops from 20 u/s in four seconds and sheds speed immediately', () => {
   const sonic = makeSonic();
   sonic.setSpeed(20, 0, 0);
 
@@ -93,9 +105,19 @@ test('ground braking stops from 20 u/s in four seconds and strengthens near zero
   const lateSpeed = sonic.getSpeed().x;
   sonic.update(0.05);
 
+  assert.ok(firstLoss > 0.2);
   assert.ok(lateSpeed > 0);
-  assert.ok(lateSpeed > firstLoss);
   assert.equal(sonic.getSpeed().x, 0);
+});
+
+test('reversing sheds speed in the first moments', () => {
+  const sonic = makeSonic();
+  sonic.setSpeed(20, 0, 0);
+  sonic.do('MOVE_LEFT');
+
+  for (let i = 0; i < 4; i++) sonic.update(0.05);
+
+  assert.ok(20 - sonic.getSpeed().x > 1.5);
 });
 
 test('air braking is lighter than ground braking', () => {
@@ -120,7 +142,7 @@ test('opposite movement adds to braking before accelerating in reverse', () => {
 
   coasting.updateHorizontalSpeed(1);
   reversing.updateHorizontalSpeed(1);
-  assert.ok(Math.abs(reversing.getSpeed().x - (coasting.getSpeed().x - 2)) < 1e-9);
+  assert.ok(reversing.getSpeed().x < coasting.getSpeed().x);
 
   for (let i = 0; i < 80; i++) reversing.updateHorizontalSpeed(0.05);
   assert.ok(reversing.getSpeed().x < 0);

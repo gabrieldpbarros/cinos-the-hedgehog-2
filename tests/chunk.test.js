@@ -27,9 +27,16 @@ test('chunks keep height and texture distance continuous across ramps', () => {
 });
 
 test('terrain and visuals recycle five chunks when Sonic reaches the third', () => {
+  let canvases = 0;
+  const createElement = globalThis.document.createElement;
+  globalThis.document.createElement = () => {
+    canvases += 1;
+    return createElement();
+  };
   const terrain = new Terrain(0);
   const visual = new TerrainModel('green_hill');
   visual.createGround(terrain.chunks);
+  assert.equal(canvases, 2);
 
   assert.equal(terrain.update(69).length, 0);
   const first = visual.chunkModels[0];
@@ -46,12 +53,15 @@ test('terrain and visuals recycle five chunks when Sonic reaches the third', () 
   assert.equal(added[0].initialX, 190);
   assert.equal(terrain.chunks.length, 5);
   assert.equal(visual.getGround().children.length, 5);
-  assert.equal(disposed, 5);
+  assert.equal(disposed, 1);
+  assert.equal(canvases, 2);
 
   const more = terrain.update(190);
   visual.updateGround(more);
   assert.equal(more.length, 3);
   assert.equal(visual.getGround().children.length, 5);
+  assert.equal(visual.chunkModels[0].materials[0], visual.chunkModels[4].materials[0]);
+  assert.equal(visual.chunkModels[0].materials[1].map, visual.chunkModels[4].materials[1].map);
   for (let i = 0; i < 5; i++) {
     assert.equal(visual.chunkModels[i].chunk, terrain.chunks[i]);
     if (i > 0) {

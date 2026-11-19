@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { EntityModel } from "./EntityModel.js";
 
-const WALK_LIMIT = 20;
+const WALK_LIMIT = 8;
 const SPIN_REFERENCE_SPEED = 12;
 
 export async function createSonicModel() {

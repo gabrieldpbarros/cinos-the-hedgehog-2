@@ -1,14 +1,23 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { EntityModel } from "./EntityModel.js";
 
-export async function createBuzzBomberModel() {
-  const loader = new GLTFLoader();
-  const { scene, animations } = await loader.loadAsync(
-    `${import.meta.env.BASE_URL}model-imports/buzzbomber-sonic-generations-ripped/source/buzzbomber.glb`
-  );
+let buzzBomberLoad;
 
-  return new BuzzBomberModel(scene, animations);
+function loadBuzzBomberAsset() {
+  buzzBomberLoad ??= new GLTFLoader()
+    .loadAsync(`${import.meta.env.BASE_URL}model-imports/buzzbomber-sonic-generations-ripped/source/buzzbomber.glb`)
+    .catch((error) => {
+      buzzBomberLoad = undefined;
+      throw error;
+    });
+  return buzzBomberLoad;
+}
+
+export async function createBuzzBomberModel() {
+  const { scene, animations } = await loadBuzzBomberAsset();
+  return new BuzzBomberModel(clone(scene), animations);
 }
 
 class BuzzBomberModel extends EntityModel {

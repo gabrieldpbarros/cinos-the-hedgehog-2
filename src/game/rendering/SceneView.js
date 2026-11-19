@@ -60,6 +60,10 @@ export class SceneView {
     this.scene.add(model);
   }
 
+  removeEntity(entity) {
+    entity.getModel3D().getObject3D().removeFromParent();
+  }
+
   resize(w, h) {
     Object.values(this.cameras).forEach((cam) => {
       cam.aspect = w / h;
