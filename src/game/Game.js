@@ -13,10 +13,10 @@ export class Game {
     await this.level.buildLevel();
     this.scene = new SceneView(this.canvas);
     this.level.sonic.update(0);
-    this.level.buzzBomber.update(0);
+    for (const enemy of this.level.enemies) enemy.update(0);
     this.scene.drawChunks(this.level.terrain.chunks);
     this.scene.drawEntity(this.level.sonic);
-    this.scene.drawEntity(this.level.buzzBomber);
+    for (const enemy of this.level.enemies) this.scene.drawEntity(enemy);
     this.syncScene();
     this.state  = 'playing';
   }
@@ -30,10 +30,14 @@ export class Game {
 
   update(dt) {
     if (this.state !== 'playing') return;
-    const newChunks = this.level.update(dt);
-    this.scene.updateChunks(newChunks);
-    if (this.level.sonic.logic.checkCollision(this.level.buzzBomber.logic)) {
-      this.state = 'lose';
+    const { chunks, removed } = this.level.update(dt);
+    this.scene.updateChunks(chunks);
+    for (const enemy of removed) this.scene.removeEntity(enemy);
+    for (const enemy of this.level.enemies) {
+      if (this.level.sonic.logic.checkCollision(enemy.logic)) {
+        this.state = 'lose';
+        break;
+      }
     }
     this.syncScene();
   }

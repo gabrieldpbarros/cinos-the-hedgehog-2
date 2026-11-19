@@ -43,7 +43,7 @@ test('collision detects crossing and contained boxes without stored vertices', a
   tall.position.x = 3;
   assert.equal(wide.checkCollision(tall), true); // touching faces
   tall.setSpeed(0.01, 0, 0);
-  await tall.moveHorizontal();
+  tall.moveHorizontal(1);
   assert.equal(wide.checkCollision(tall), false);
 });
 
@@ -70,4 +70,30 @@ test('holding jump starts another jump after landing', () => {
   for (let i = 0; i < 30 && !sonic.onGround; i++) sonic.update(0.05);
   sonic.update(0.05);
   assert.equal(sonic.onGround, true);
+});
+
+test('a fast frame still hits a thin target crossed between the two poses', () => {
+  const groundAt = () => ({ height: 0, normal: { x: 0, y: 1, z: 0 } });
+  const sonic = new EntityLogic(8.8, 0.75, 0, 'player', true, groundAt);
+  sonic.setHitbox(1.065, 1.5, 0.765);
+  sonic.setSpeed(40, 0, 0);
+  const ring = new EntityLogic(10, 0.75, 0, 'ring');
+  ring.setHitbox(0.4, 0.8, 0.8);
+
+  sonic.update(0.05);
+
+  const endGap = Math.abs(sonic.getPosition().x - ring.position.x);
+  const endReach = (sonic.hitboxDim.length + ring.hitboxDim.length) / 2;
+  assert.ok(endGap > endReach);
+  assert.equal(sonic.checkCollision(ring), true);
+});
+
+test('a trajectory that stays above a target does not count as a hit', () => {
+  const sonic = new EntityLogic(14, 3.2, 0, 'player');
+  sonic.setHitbox(1.065, 0.9, 0.765);
+  sonic.previousPosition = { x: 6, y: 3.2, z: 0 };
+  const enemy = new EntityLogic(10, 1.2, 0, 'enemy');
+  enemy.setHitbox(1.125, 1.42, 1.4);
+
+  assert.equal(sonic.checkCollision(enemy), false);
 });

@@ -13,14 +13,15 @@ test('contact with Buzz Bomber ends play after updating entities', () => {
       getPosition: () => ({ x: 5, y: 2 }),
       checkCollision: () => collided,
     } },
-    buzzBomber: { logic: {} },
+    enemies: [{ logic: {} }],
     terrain: { getHeightAt: () => 0 },
-    update: () => { updateCount++; collided = true; return []; },
+    update: () => { updateCount++; collided = true; return { chunks: [], removed: [] }; },
   };
   game.scene = {
     updateChunks: () => {},
     sync: () => {},
     render: () => {},
+    removeEntity: () => {},
   };
 
   game.update(0.05);
@@ -28,4 +29,32 @@ test('contact with Buzz Bomber ends play after updating entities', () => {
   assert.equal(updateCount, 1);
   game.update(0.05);
   assert.equal(updateCount, 1);
+});
+
+test('contact with a later enemy ends play and a removed enemy leaves the scene', () => {
+  const game = new Game(null, null);
+  const far = { logic: {} };
+  const near = { logic: {} };
+  const gone = { logic: {} };
+  let removedFromScene = null;
+  game.state = 'playing';
+  game.level = {
+    sonic: { logic: {
+      getPosition: () => ({ x: 5, y: 2 }),
+      checkCollision: (other) => other === near.logic,
+    } },
+    enemies: [far, near],
+    terrain: { getHeightAt: () => 0 },
+    update: () => ({ chunks: [], removed: [gone] }),
+  };
+  game.scene = {
+    updateChunks: () => {},
+    sync: () => {},
+    render: () => {},
+    removeEntity: (enemy) => { removedFromScene = enemy; },
+  };
+
+  game.update(0.05);
+  assert.equal(game.state, 'lose');
+  assert.equal(removedFromScene, gone);
 });

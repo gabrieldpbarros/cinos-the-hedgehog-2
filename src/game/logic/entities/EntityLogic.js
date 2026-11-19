@@ -76,13 +76,8 @@ export class EntityLogic {
   }
 
   checkCollision(otherEntity) {
-    const own           = this.hitboxDim;
-    const other         = otherEntity.hitboxDim;
-    const isInXInterval = Math.abs(this.position.x - otherEntity.position.x) <= (own.length + other.length) / 2;
-    const isInYInterval = Math.abs(this.position.y - otherEntity.position.y) <= (own.heigth + other.heigth) / 2;
-    const isInZInterval = Math.abs(this.position.z - otherEntity.position.z) <= (own.depth  + other.depth)  / 2;
-
-    return isInXInterval && isInYInterval && isInZInterval;
+    const from = this.previousPosition ?? this.position;
+    return segmentHitsBox(from, this.position, this.hitboxDim, otherEntity);
   }
 
   jump() {
@@ -144,6 +139,11 @@ export class EntityLogic {
   updateHorizontalSpeed() {}
 
   update(dt) {
+    this.previousPosition = {
+      x: this.position.x,
+      y: this.position.y,
+      z: this.position.z,
+    };
     if (this.currentActions.has("JUMP")) this.jump();
     this.updateHorizontalSpeed(dt);
 
@@ -151,4 +151,31 @@ export class EntityLogic {
     this.moveVertical(dt);
     this.moveDepth(dt);
   }
+}
+
+function segmentHitsBox(from, to, own, otherEntity) {
+  const other = otherEntity.hitboxDim;
+  const otherPos = otherEntity.position;
+  const slabs = [
+    [from.x, to.x - from.x, otherPos.x, (own.length + other.length) / 2],
+    [from.y, to.y - from.y, otherPos.y, (own.heigth + other.heigth) / 2],
+    [from.z, to.z - from.z, otherPos.z, (own.depth + other.depth) / 2],
+  ];
+  let tMin = 0;
+  let tMax = 1;
+  for (const [origin, delta, center, reach] of slabs) {
+    const min = center - reach;
+    const max = center + reach;
+    if (Math.abs(delta) < 1e-9) {
+      if (origin < min || origin > max) return false;
+      continue;
+    }
+    let enter = (min - origin) / delta;
+    let exit = (max - origin) / delta;
+    if (enter > exit) [enter, exit] = [exit, enter];
+    tMin = Math.max(tMin, enter);
+    tMax = Math.min(tMax, exit);
+    if (tMin > tMax) return false;
+  }
+  return true;
 }
