@@ -8,6 +8,7 @@ import { createBuzzBomberModel } from "./rendering/entities/BuzzBomberModel.js";
 import { Entity } from "./entities/Entity.js";
 import { Ring, RING } from './logic/entities/Ring.js';
 import { RingModel, loadRingTemplate } from './rendering/entities/RingModel.js';
+import { RingAudio } from './rendering/RingAudio.js';
 
 async function makeSonic(groundAt) {
   const sonicLogic = new Sonic(
@@ -47,6 +48,7 @@ export class Level {
     this.finishDistance = finishDistance;
     this.finishX = null;
     this.ringsCollected = 0;
+    this.ringBalance = 0;
     this.rings = [];
     this.ringLayouts = new Map();
     this.hitboxesVisible = false;
@@ -84,6 +86,7 @@ export class Level {
     // controllers
     this.player = new PlayerController(this.sonic, this.mainInput);
     this.ringTemplate = await loadRingTemplate();
+    this.ringAudio = new RingAudio();
     this.syncRingChunks();
   }
 
@@ -118,6 +121,24 @@ export class Level {
     return { added, removed };
   }
 
+  collectRings() {
+    for (const ring of this.rings) {
+      if (!ring.logic.active || !this.sonic.logic.checkCollision(ring.logic)) continue;
+      ring.logic.collect();
+      this.ringBalance = Math.min(999, this.ringBalance + 1);
+      this.ringsCollected++;
+      this.ringLayouts.get(ring.logic.chunkX)?.add(ring.logic.id);
+      ring.model.update(0, ring.logic);
+      this.ringAudio?.play();
+    }
+  }
+
+  removeRings(rings) {
+    const gone = new Set(rings);
+    this.rings = this.rings.filter((ring) => !gone.has(ring));
+    this.entities = this.entities.filter((entity) => !gone.has(entity));
+  }
+
   update(dt) {
     this.sonic.logic.setMinX(this.terrain.chunks[0].initialX);
     this.player.updateEntity(dt);
@@ -126,8 +147,11 @@ export class Level {
     const chunks = this.terrain.update(this.sonic.logic.getPosition().x);
     const ringChanges = this.syncRingChunks();
     for (const ring of this.rings) ring.update(dt);
+    const finished = this.rings.filter((ring) => ring.logic.finished);
+    this.removeRings(finished);
+    this.collectRings();
     const minX = this.terrain.chunks[0].initialX;
-    const removed = [...ringChanges.removed];
+    const removed = [...ringChanges.removed, ...finished];
     this.enemies = this.enemies.filter((enemy) => {
       if (enemy.logic.getPosition().x >= minX) return true;
       removed.push(enemy);

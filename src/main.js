@@ -54,7 +54,7 @@ function updateOverlay(distance) {
       <div class="results">
         <div><span>Distância</span><strong>${distance} m</strong></div>
         <div><span>Tempo</span><strong>${formatTime(results.time)}</strong></div>
-        <div><span>Anéis coletados</span><strong>${results.rings} <small>(placeholder)</small></strong></div>
+        <div><span>Anéis coletados</span><strong>${results.rings}</strong></div>
         <div class="grade"><span>Nota</span><strong>${results.grade}</strong></div>
       </div>
       <small>Espaço ou R para jogar novamente</small>`;
@@ -77,7 +77,7 @@ function loop() {
   const hint =
     game.state === 'playing' ? '  P: pausar' :
     game.state === 'paused' ? '  P: continuar' : '';
-  hud.textContent = `Distância: ${distance} m  Vel: ${speed} u/s  Estado: ${game.state}${hint}`;
+  hud.textContent = `Distância: ${distance} m  Vel: ${speed} u/s  Anéis: ${game.level?.ringBalance ?? 0}  Estado: ${game.state}${hint}`;
   updateOverlay(distance);
 }
 loop();

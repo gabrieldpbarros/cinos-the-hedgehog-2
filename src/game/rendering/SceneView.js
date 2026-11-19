@@ -97,6 +97,7 @@ export class SceneView {
 
   removeEntity(entity) {
     entity.getModel3D().getObject3D().removeFromParent();
+    entity.model.dispose?.();
   }
 
   resize(w, h) {

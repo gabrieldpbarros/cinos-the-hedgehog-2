@@ -7,6 +7,8 @@ import { Level } from '../src/game/Level.js';
 import { Terrain } from '../src/game/logic/terrain/Terrain.js';
 import { Chunk, chunkStrategies } from '../src/game/logic/terrain/Chunk.js';
 import { RingModel } from '../src/game/rendering/entities/RingModel.js';
+import { EntityLogic } from '../src/game/logic/entities/EntityLogic.js';
+import { RING } from '../src/game/logic/entities/Ring.js';
 
 const assetUrl = new URL('../public/model-imports/sonic_ring/', import.meta.url);
 // FileLoader usa este evento de navegador mesmo ao ler um buffer data: no Node.
@@ -65,4 +67,54 @@ test('ring layout follows all terrain types, precedes enemy, and stays bounded o
     level.terrain.chunks.push(new Chunk(70, strategy, 1));
     assert.ok(level.syncRingChunks().added.every((r) => r.hitboxVisible));
   }
+});
+
+test('swept collection is immediate and unique, persists on chunk refresh, and resets in a new level', () => {
+  const level = makeLevel();
+  const sonic = new EntityLogic(4, 4.7, 0, 'player', false);
+  sonic.setHitbox(0.2, 0.2, 0.2);
+  sonic.previousPosition = { x: 0, y: 4.7, z: 0 };
+  level.sonic = { logic: sonic };
+  level.collectRings();
+  assert.equal(level.ringBalance, 3);
+  assert.equal(level.ringsCollected, 3);
+  assert.ok(level.rings.slice(0, 3).every((r) => !r.logic.hitboxActive));
+  assert.equal(sonic.checkCollision(level.rings[0].logic), false);
+  level.collectRings();
+  level.syncRingChunks();
+  level.collectRings();
+  assert.equal(level.ringsCollected, 3);
+  assert.equal(level.ringLayouts.get(-10).size, 3);
+  assert.equal(makeLevel().ringBalance, 0);
+  assert.equal(makeLevel().ringsCollected, 0);
+});
+
+test('balance caps at 999 but collection and results still count and consume rings', () => {
+  const level = makeLevel();
+  level.sonic = { logic: { checkCollision: () => true } };
+  level.ringBalance = 998;
+  level.collectRings();
+  assert.equal(level.ringBalance, 999);
+  assert.equal(level.ringsCollected, 9);
+  assert.ok(level.rings.every((r) => !r.logic.active));
+});
+
+test('collection shows four short sparkle stages and removes the effect at the end', () => {
+  const level = makeLevel();
+  const ring = level.rings[0];
+  ring.logic.collect();
+  const opacity = [];
+  for (let i = 0; i < 4; i++) {
+    ring.model.update(0, ring.logic);
+    opacity.push(ring.model.sparkleMaterial.opacity);
+    ring.update(RING.sparkleDuration / 4);
+  }
+  assert.deepEqual(opacity, [1, 0.8, 0.5, 0.2]);
+  assert.equal(ring.logic.finished, true);
+  ring.toggleHitboxVisual();
+  assert.equal(ring.model.hitboxHelper.visible, false);
+  level.removeRings([ring]);
+  ring.model.dispose();
+  assert.equal(ring.model.sparkle.parent, null);
+  assert.equal(level.entities.includes(ring), false);
 });
