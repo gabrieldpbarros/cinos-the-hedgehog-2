@@ -52,6 +52,7 @@ export class Level {
     this.rings = [];
     this.ringLayouts = new Map();
     this.hitboxesVisible = false;
+    this.scatterSequence = 0;
   }
 
   async buildLevel() {
@@ -93,7 +94,8 @@ export class Level {
   syncRingChunks() {
     const added = [];
     const activeChunks = new Set(this.terrain.chunks.map((chunk) => chunk.initialX));
-    const removed = this.rings.filter((ring) => !activeChunks.has(ring.logic.chunkX));
+    const removed = this.rings.filter((ring) =>
+      !ring.logic.scattered && !activeChunks.has(ring.logic.chunkX));
     const gone = new Set(removed);
     this.rings = this.rings.filter((ring) => !gone.has(ring));
     this.entities = this.entities.filter((entity) => !gone.has(entity));
@@ -123,7 +125,8 @@ export class Level {
 
   collectRings() {
     for (const ring of this.rings) {
-      if (!ring.logic.active || !this.sonic.logic.checkCollision(ring.logic)) continue;
+      if (!ring.logic.active || ring.logic.hitboxActive === false ||
+          !this.sonic.logic.checkCollision(ring.logic)) continue;
       ring.logic.collect();
       this.ringBalance = Math.min(999, this.ringBalance + 1);
       this.ringsCollected++;
@@ -137,6 +140,46 @@ export class Level {
     const gone = new Set(rings);
     this.rings = this.rings.filter((ring) => !gone.has(ring));
     this.entities = this.entities.filter((entity) => !gone.has(entity));
+  }
+
+  scatterRings(balance) {
+    const count = Math.min(balance, RING.scatterLimit);
+    const scattered = this.rings.filter((ring) => ring.logic.scattered && ring.logic.active && !ring.logic.finished);
+    const removed = scattered.slice(0, Math.max(0, scattered.length + count - RING.scatterLimit));
+    this.removeRings(removed);
+    const added = [];
+    const { x, y } = this.sonic.logic.getPosition();
+    for (let i = 0; i < count; i++) {
+      const pair = Math.floor((i % 16) / 2);
+      const angle = (101.25 + pair * 22.5) * Math.PI / 180;
+      const magnitude = RING.scatterSpeed * (i < 16 ? 1 : 0.5);
+      // O leque do GDD é refletido para o semiplano superior do nosso X/Y.
+      const vx = (i % 2 === 0 ? -1 : 1) * Math.abs(Math.cos(angle)) * magnitude;
+      const vy = Math.abs(Math.sin(angle)) * magnitude;
+      const logic = new Ring(x, y, `scatter:${this.scatterSequence++}`, null);
+      logic.scatter(vx, vy, this.terrain);
+      const ring = new Entity(logic, new RingModel(this.ringTemplate));
+      ring.setHitbox(RING.hitbox, RING.hitbox, RING.depth);
+      if (this.hitboxesVisible) ring.toggleHitboxVisual();
+      this.rings.push(ring);
+      this.entities.push(ring);
+      added.push(ring);
+    }
+    return { added, removed };
+  }
+
+  resolveEnemyContact() {
+    if (this.sonic.logic.invulnerabilityRemaining > 0) return { added: [], removed: [] };
+    for (const enemy of this.enemies) {
+      if (!this.sonic.logic.checkCollision(enemy.logic)) continue;
+      if (this.ringBalance === 0) return { defeated: true, added: [], removed: [] };
+      const previousBalance = this.ringBalance;
+      this.ringBalance = 0;
+      this.sonic.logic.takeHit(enemy.logic.getPosition().x);
+      this.sonic.model.update(0, this.sonic.logic);
+      return this.scatterRings(previousBalance);
+    }
+    return { added: [], removed: [] };
   }
 
   update(dt) {
@@ -161,7 +204,13 @@ export class Level {
       const gone = new Set(removed);
       this.entities = this.entities.filter((entity) => !gone.has(entity));
     }
-    return { chunks, removed, added: ringChanges.added };
+    const impact = this.resolveEnemyContact();
+    return {
+      chunks,
+      removed: [...removed, ...impact.removed],
+      added: [...ringChanges.added, ...impact.added],
+      defeated: impact.defeated ?? false,
+    };
   }
 
   toggleHitboxes() {

@@ -30,7 +30,7 @@ export class RingModel extends EntityModel {
   }
 
   update(dt, logic) {
-    this.model.rotation.y += dt * Math.PI * 2;
+    this.model.rotation.y += dt * Math.PI * 2 * (logic?.rotationScale ?? 1);
     if (logic?.active !== false) return;
     if (!this.sparkle) {
       this.collected = true;

@@ -15,6 +15,11 @@ export class PlayerController extends Controller {
   }
 
   updateEntity(dt) {
+    if (this.entity.logic.recovering) {
+      this.entity.logic.clearActions();
+      this.entity.update(dt);
+      return;
+    }
     for (const [action, keys] of PlayerController.AVAILABLE_INPUTS)
       this.entity.handleAction(action, keys.some((key) => this.inputListener.isDown(key)));
     

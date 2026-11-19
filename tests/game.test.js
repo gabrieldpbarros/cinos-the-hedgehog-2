@@ -15,7 +15,7 @@ test('contact with Buzz Bomber ends play after updating entities', () => {
     } },
     enemies: [{ logic: {} }],
     terrain: { getHeightAt: () => 0 },
-    update: () => { updateCount++; collided = true; return { chunks: [], removed: [] }; },
+    update: () => { updateCount++; collided = true; return { chunks: [], removed: [], defeated: collided }; },
   };
   game.scene = {
     updateChunks: () => {},
@@ -87,7 +87,7 @@ test('contact with a later enemy ends play and a removed enemy leaves the scene'
     } },
     enemies: [far, near],
     terrain: { getHeightAt: () => 0 },
-    update: () => ({ chunks: [], removed: [gone] }),
+    update: () => ({ chunks: [], removed: [gone], defeated: true }),
   };
   game.scene = {
     updateChunks: () => {},

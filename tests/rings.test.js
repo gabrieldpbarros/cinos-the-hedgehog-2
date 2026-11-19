@@ -8,7 +8,12 @@ import { Terrain } from '../src/game/logic/terrain/Terrain.js';
 import { Chunk, chunkStrategies } from '../src/game/logic/terrain/Chunk.js';
 import { RingModel } from '../src/game/rendering/entities/RingModel.js';
 import { EntityLogic } from '../src/game/logic/entities/EntityLogic.js';
-import { RING } from '../src/game/logic/entities/Ring.js';
+import { Ring, RING } from '../src/game/logic/entities/Ring.js';
+import { Sonic } from '../src/game/logic/entities/Sonic.js';
+import { Entity } from '../src/game/entities/Entity.js';
+import { EntityModel } from '../src/game/rendering/entities/EntityModel.js';
+import { PlayerController } from '../src/game/logic/controllers/PlayerController.js';
+import { Game } from '../src/game/Game.js';
 
 const assetUrl = new URL('../public/model-imports/sonic_ring/', import.meta.url);
 // FileLoader usa este evento de navegador mesmo ao ler um buffer data: no Node.
@@ -19,7 +24,7 @@ const gltf = JSON.parse(await readFile(new URL('scene.gltf', assetUrl), 'utf8'))
 gltf.buffers[0].uri = `data:application/octet-stream;base64,${(await readFile(new URL('scene.bin', assetUrl))).toString('base64')}`;
 const { scene: template } = await new GLTFLoader().parseAsync(JSON.stringify(gltf), '');
 
-export function makeLevel(strategy = chunkStrategies.flat) {
+function makeLevel(strategy = chunkStrategies.flat) {
   const level = new Level({ isDown: () => false });
   level.startPosX = 0;
   level.finishX = 1000;
@@ -43,6 +48,194 @@ test('real ring asset is centered, scaled and cloned without rotating the AABB',
   assert.equal(b.model.rotation.y, 0);
   assert.equal(a.root.rotation.y, 0);
   assert.deepEqual(a.hitboxHelper.box.getSize(new THREE.Vector3()).toArray(), [0.6, 0.6, 0.8]);
+});
+
+function playableLevel() {
+  const level = makeLevel();
+  level.terrain.update = () => [];
+  const groundAt = (x) => ({ height: level.terrain.getHeightAt(x), normal: { x: 0, y: 1 } });
+  const logic = new Sonic(0, 0, 0, 'player', true, groundAt);
+  level.sonic = new Entity(logic, new EntityModel(new THREE.Mesh(new THREE.BoxGeometry(1, 1.5, 0.7))));
+  level.sonic.setOnGround(4);
+  level.entities.push(level.sonic);
+  level.player = new PlayerController(level.sonic, level.mainInput);
+  const enemyLogic = new EntityLogic(5, 4.7, 0, 'enemy', false);
+  enemyLogic.setHitbox(1, 1, 1);
+  level.enemies = [{ logic: enemyLogic, controller: { updateEntity() {} } }];
+  return level;
+}
+
+test('collection precedes damage in the same update, one impact consumes balance but preserves results', () => {
+  const level = playableLevel();
+  level.sonic.logic.position.x = 1;
+  level.enemies[0].logic.position.x = 1;
+  level.enemies.push(level.enemies[0]);
+  const result = level.update(0);
+  assert.equal(result.defeated, false);
+  assert.equal(level.ringBalance, 0);
+  assert.equal(level.ringsCollected, 1);
+  assert.equal(result.added.length, 1);
+  assert.equal(level.sonic.logic.invulnerabilityRemaining, 2);
+  const game = new Game(null, null);
+  game.level = level;
+  game.elapsedTime = 6;
+  assert.equal(game.getResults().rings, 1);
+  assert.equal(game.getResults().grade, 'A');
+});
+
+test('zero balance loses, protected contact survives, and invulnerability ignores all common contact', () => {
+  const level = playableLevel();
+  level.sonic.logic.position.x = 5;
+  assert.equal(level.resolveEnemyContact().defeated, true);
+  level.ringBalance = 20;
+  assert.equal(level.resolveEnemyContact().added.length, 20);
+  assert.equal(level.ringBalance, 0);
+  level.ringBalance = 2;
+  assert.equal(level.resolveEnemyContact().added.length, 0);
+  assert.equal(level.ringBalance, 2);
+  level.sonic.logic.invulnerabilityRemaining = 0;
+  assert.equal(level.resolveEnemyContact().added.length, 2);
+});
+
+test('hurt impulse points away, ignores held movement/jump until landing, then controls resume', () => {
+  const level = playableLevel();
+  level.mainInput.isDown = () => true;
+  const sonic = level.sonic.logic;
+  sonic.takeHit(5);
+  assert.deepEqual(sonic.speed, { x: -4, y: 8, z: 0 });
+  level.player.updateEntity(0.05);
+  assert.equal(sonic.speed.x, -4);
+  assert.ok(sonic.speed.y < 8);
+  assert.equal(sonic.currentActions.size, 0);
+  for (let i = 0; i < 120 && sonic.recovering; i++) level.player.updateEntity(1 / 60);
+  assert.equal(sonic.recovering, false);
+  assert.equal(sonic.onGround, true);
+  assert.ok(sonic.invulnerabilityRemaining > 0);
+  level.mainInput.isDown = (key) => key === 'ArrowRight';
+  level.player.updateEntity(0.05);
+  assert.ok(sonic.speed.x > -4);
+  sonic.takeHit(sonic.position.x - 1);
+  assert.equal(sonic.speed.x, 4);
+});
+
+test('blink alternates every 2/60 seconds and expires even without a landing', () => {
+  const level = playableLevel();
+  const sonic = level.sonic.logic;
+  sonic.groundAt = () => null;
+  sonic.takeHit(5);
+  assert.equal(sonic.isDamageVisible(), true);
+  sonic.update(2 / 60);
+  assert.equal(sonic.isDamageVisible(), false);
+  sonic.update(2 / 60);
+  assert.equal(sonic.isDamageVisible(), true);
+  for (let i = 0; i < 116; i++) sonic.update(1 / 60);
+  assert.equal(sonic.invulnerabilityRemaining, 0);
+  assert.equal(sonic.isDamageVisible(), true);
+  assert.equal(sonic.recovering, true);
+});
+
+test('scatter has mirrored upward pairs, second wave at half speed, and evicts only necessary oldest active rings', () => {
+  const level = playableLevel();
+  const first = level.scatterRings(999).added;
+  assert.equal(first.length, 32);
+  for (let i = 0; i < 32; i += 2) {
+    const a = first[i].logic.speed;
+    const b = first[i + 1].logic.speed;
+    assert.equal(a.x, -b.x);
+    assert.equal(a.y, b.y);
+    assert.ok(a.y > 0);
+    assert.ok(Math.abs(Math.hypot(a.x, a.y) - (i < 16 ? 12 : 6)) < 1e-9);
+    if (i >= 16) assert.equal(a.y, first[i - 16].logic.speed.y / 2);
+  }
+  first[0].logic.collect();
+  const second = level.scatterRings(3);
+  assert.deepEqual(second.removed, first.slice(1, 3));
+  assert.equal(level.rings.filter((r) => r.logic.scattered && r.logic.active).length, 32);
+  assert.ok(second.removed.every((r) => !level.entities.includes(r)));
+});
+
+test('scattered rings survive chunk discard and expire out of camera with gradual final rotation', () => {
+  const level = playableLevel();
+  const ring = level.scatterRings(1).added[0];
+  level.terrain.chunks = [new Chunk(100, chunkStrategies.flat, 0)];
+  const changes = level.syncRingChunks();
+  assert.equal(changes.removed.includes(ring), false);
+  ring.logic.age = RING.lifetime - RING.slowDuration;
+  assert.ok(Math.abs(ring.logic.rotationScale - 1) < 1e-9);
+  ring.logic.age += RING.slowDuration / 2;
+  assert.ok(Math.abs(ring.logic.rotationScale - 0.5) < 1e-9);
+  ring.logic.update(RING.slowDuration / 2);
+  assert.equal(ring.logic.finished, true);
+  assert.equal(ring.logic.rotationScale, 0);
+});
+
+test('recollection starts exactly at 64/60, counts again, and expiry at 256/60 wins over collision', () => {
+  const level = playableLevel();
+  const ring = level.scatterRings(1).added[0];
+  level.sonic.logic.checkCollision = () => true;
+  level.removeRings(level.rings.filter((r) => r !== ring));
+  ring.logic.update(RING.recollectDelay - 0.001);
+  level.collectRings();
+  assert.equal(level.ringsCollected, 0);
+  ring.logic.update(0.001);
+  level.collectRings();
+  assert.equal(level.ringsCollected, 1);
+  assert.equal(level.ringBalance, 1);
+  const expired = level.scatterRings(1).added[0];
+  expired.logic.update(RING.lifetime - 0.001);
+  assert.equal(expired.logic.finished, false);
+  expired.logic.update(0.001);
+  level.collectRings();
+  assert.equal(level.ringsCollected, 1);
+  assert.equal(expired.logic.finished, true);
+});
+
+test('scatter uses converted gravity in seconds, bounces on flat/ramp floors, settles small bounces, and handles null', () => {
+  assert.equal(RING.gravity, -16.875);
+  for (const strategy of Object.values(chunkStrategies)) {
+    const chunk = new Chunk(-10, strategy, 2);
+    const terrain = { getHeightAt: (x) => chunk.getHeightAtX(x) };
+    const ring = new Ring(0, terrain.getHeightAt(0) + 0.31, 'test');
+    ring.scatter(1, -4, terrain);
+    ring.update(0.01);
+    assert.ok(Math.abs(ring.position.y - terrain.getHeightAt(ring.position.x) - 0.3) < 1e-9);
+    assert.ok(Math.abs(ring.speed.y - (4 - RING.gravity * 0.01) * 0.75) < 1e-9);
+    ring.speed.x = 0;
+    ring.speed.y = -0.01;
+    ring.position.y = terrain.getHeightAt(ring.position.x) + 0.3;
+    for (let i = 0; i < 20; i++) ring.update(0.05);
+    assert.equal(ring.speed.y, 0);
+  }
+  const ring = new Ring(0, 0, 'void');
+  ring.scatter(2, -1, { getHeightAt: () => null });
+  ring.update(0.1);
+  assert.equal(ring.position.x, 0.2);
+  assert.ok(Math.abs(ring.position.y - (-0.1 + RING.gravity * 0.01 / 2)) < 1e-9);
+  assert.equal(ring.speed.y, -1 + RING.gravity * 0.1);
+});
+
+test('paused game freezes scatter age, invulnerability, movement, and sparkle until resumed', () => {
+  const level = playableLevel();
+  const ring = level.scatterRings(1).added[0];
+  const sparkle = level.rings[0];
+  sparkle.logic.collect();
+  level.sonic.logic.takeHit(5);
+  const game = new Game(null, null);
+  game.level = level;
+  game.state = 'playing';
+  game.scene = { updateChunks() {}, removeEntity() {}, drawEntity() {}, sync() {}, render() {}, drawFinishLine() {} };
+  game.togglePause();
+  game.update(1);
+  assert.equal(ring.logic.age, 0);
+  assert.equal(sparkle.logic.collectedAge, 0);
+  assert.equal(level.sonic.logic.invulnerabilityRemaining, 2);
+  assert.equal(game.elapsedTime, 0);
+  game.togglePause();
+  game.update(0.05);
+  assert.equal(ring.logic.age, 0.05);
+  assert.equal(sparkle.logic.collectedAge, 0.05);
+  assert.equal(level.sonic.logic.invulnerabilityRemaining, 1.95);
+  assert.equal(game.elapsedTime, 0.05);
 });
 
 test('ring layout follows all terrain types, precedes enemy, and stays bounded on chunk changes', () => {
@@ -85,6 +278,9 @@ test('swept collection is immediate and unique, persists on chunk refresh, and r
   level.collectRings();
   assert.equal(level.ringsCollected, 3);
   assert.equal(level.ringLayouts.get(-10).size, 3);
+  level.removeRings(level.rings.filter((r) => !r.logic.active));
+  assert.equal(level.syncRingChunks().added.length, 0);
+  assert.equal(level.rings.length, 6);
   assert.equal(makeLevel().ringBalance, 0);
   assert.equal(makeLevel().ringsCollected, 0);
 });

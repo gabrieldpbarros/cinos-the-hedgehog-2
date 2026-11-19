@@ -32,9 +32,9 @@ export class Game {
   update(dt) {
     if (this.state !== 'playing') return;
     this.elapsedTime += dt;
-    const { chunks, removed, added = [] } = this.level.update(dt);
+    const { chunks, removed, added = [], defeated = false } = this.level.update(dt);
     this.scene.updateChunks(chunks);
-    for (const enemy of removed) this.scene.removeEntity(enemy);
+    for (const entity of removed) this.scene.removeEntity(entity);
     for (const entity of added) this.scene.drawEntity(entity);
     const finishHeight = this.level.terrain.getHeightAt(this.level.finishX);
     if (!this.finishLineDrawn && finishHeight !== null) {
@@ -42,12 +42,7 @@ export class Game {
       this.finishLineDrawn = true;
     }
 
-    for (const enemy of this.level.enemies) {
-      if (this.level.sonic.logic.checkCollision(enemy.logic)) {
-        this.state = 'lose';
-        break;
-      }
-    }
+    if (defeated) this.state = 'lose';
 
     if (this.state === 'playing' &&
         this.level.sonic.logic.getPosition().x >= this.level.finishX) {
