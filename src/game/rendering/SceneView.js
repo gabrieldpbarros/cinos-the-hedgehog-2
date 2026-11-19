@@ -58,7 +58,24 @@ export class SceneView {
       }
     });
     this.scene.add(model);
-  }
+    }
+
+    drawEntity(entity) {
+        const model = entity.getModel3D().getObject3D();
+        model.traverse((object) => {
+            if (object.isMesh) {
+                object.castShadow = true;
+                object.receiveShadow = true;
+            }
+        });
+        this.scene.add(model);
+    }
+
+    removeEntity(entity) {
+        const model = entity.getModel3D().getObject3D();
+        this.scene.remove(model);
+    }
+
 
   resize(w, h) {
     Object.values(this.cameras).forEach((cam) => {
