@@ -40,14 +40,17 @@ async function makeBuzzBomber() {
 }
 
 export class Level {
-  constructor(mainInput, finishX = null) { // a definir criterio de vitoria
+  constructor(mainInput, finishDistance = 1000) {
     this.mainInput = mainInput;
-    this.finishX = finishX;
+    this.finishDistance = finishDistance;
+    this.finishX = null;
+    this.ringsCollected = 0; // placeholder: sistema de anéis ainda não implementado
   }
 
   async buildLevel() {
     // terrain
     this.startPosX = 0;
+    this.finishX = this.startPosX + this.finishDistance;
     this.terrain   = new Terrain(this.startPosX);
     this.startPosY = this.terrain.getHeightAt(this.startPosX);
 

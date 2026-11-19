@@ -59,6 +59,52 @@
             opacity: 0.9;
         }
 
+        #overlay .results {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(150px, 1fr));
+            gap: 16px 28px;
+            margin-top: 28px;
+            padding: 22px 28px;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.45);
+            font-size: 16px;
+        }
+
+        #overlay .results div {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        #overlay .results span {
+            font-size: 13px;
+            opacity: 0.75;
+        }
+
+        #overlay .results strong {
+            font-size: 26px;
+        }
+
+        #overlay .results .grade strong {
+            color: #ffd54f;
+            font-size: 42px;
+        }
+
+        #overlay .results small {
+            display: block;
+            font-size: 11px;
+            margin: 2px 0 0;
+        }
+
+        @media (max-width: 480px) {
+            #overlay .results {
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+                padding: 16px;
+            }
+        }
+
         #credits {
             position: absolute;
             right: 8px;
