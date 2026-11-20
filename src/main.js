@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Game } from './game/Game.js';
 import { Input } from './game/logic/Input.js';
 import { CONFIG } from './game/constants.js';
+import { formatHudSpeed, formatHudTime, formatTime } from './ui/hudFormat.js';
 
 const canvas = document.getElementById('canvas');
 const hudDistance = document.getElementById('hud-distance');
@@ -9,6 +10,9 @@ const hudSpeed = document.getElementById('hud-speed');
 const hudRings = document.getElementById('hud-rings');
 const hudTime = document.getElementById('hud-time');
 const overlay = document.getElementById('overlay');
+const debugElement = document.getElementById('debug');
+const debugEnabled = new URLSearchParams(window.location.search).has('debug');
+if (debugEnabled && debugElement) debugElement.hidden = false;
 
 const input = new Input();
 input.attach(window);
@@ -63,10 +67,11 @@ function renderControls() {
 
 function renderPause(distance) {
   const muted = game.audio?.muted ?? false;
+  const volume = Math.round((game.audio?.volume ?? 0.7) * 100);
   return `
     <section class="overlay-panel" role="dialog" aria-modal="true" aria-labelledby="overlay-title">
       <p class="eyebrow">Pausa · ${distance} m · ${formatTime(game.getElapsedTime())}</p>
-      <h1 class="panel-title" id="overlay-title">Corrida pausada</h1>
+      <h1 class="panel-title" id="overlay-title">Jogo pausado</h1>
       <p class="panel-subtitle">Respire, ajuste a rota e volte quando quiser. Os controles também estão logo abaixo.</p>
 
       <div class="controls-heading">
@@ -74,6 +79,12 @@ function renderPause(distance) {
         <span>Teclado</span>
       </div>
       <div class="control-grid">${renderControls()}</div>
+
+      <div class="volume-control">
+        <label for="master-volume">Volume</label>
+        <input id="master-volume" type="range" min="0" max="100" step="1" value="${volume}" aria-valuetext="${volume}%">
+        <output for="master-volume" data-volume-output>${volume}%</output>
+      </div>
 
       <div class="panel-actions">
         <button class="btn btn-primary" type="button" data-action="resume">Continuar <kbd>P</kbd></button>
@@ -155,32 +166,16 @@ function renderWin(distance) {
     </section>`;
 }
 
-function formatTime(seconds) {
-  const minutes = Math.floor(seconds / 60);
-  const wholeSeconds = Math.floor(seconds % 60);
-  const milliseconds = Math.floor((seconds % 1) * 1000);
-  return `${String(minutes).padStart(2, '0')}:${String(wholeSeconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
-}
-
-// Bungee não tem algarismos tabulares (font-variant-numeric: tabular-nums não muda nada):
-// cada caractere vai numa célula de largura fixa, então o HUD não muda de tamanho.
-function setFixedWidthText(element, text) {
+function setHudText(element, text) {
   text = String(text);
-  if (element.dataset.text === text) return;
-  element.dataset.text = text;
-  element.replaceChildren(...[...text].map((char) => {
-    const cell = document.createElement('span');
-    cell.className = /[0-9]/.test(char) ? 'hud-digit' : 'hud-digit hud-digit-sep';
-    cell.textContent = char;
-    return cell;
-  }));
+  if (element.textContent !== text) element.textContent = text;
 }
 
 function updateHud(distance, speed) {
-  setFixedWidthText(hudDistance, distance);
-  setFixedWidthText(hudSpeed, speed);
-  setFixedWidthText(hudRings, game.level?.ringBalance ?? 0);
-  setFixedWidthText(hudTime, formatTime(game.getElapsedTime()));
+  setHudText(hudDistance, distance);
+  setHudText(hudSpeed, formatHudSpeed(speed));
+  setHudText(hudRings, game.level?.ringBalance ?? 0);
+  setHudText(hudTime, formatHudTime(game.getElapsedTime()));
 }
 
 function updateOverlay(distance) {
@@ -217,9 +212,19 @@ function toggleAudio() {
 }
 
 window.addEventListener('keydown', (e) => {
-  if (e.code === 'KeyC') game.switchCamera();
+  // Escape abre e fecha a pausa, inclusive com o slider de volume focado.
+  if (e.code === 'Escape' && !e.repeat) {
+    game.togglePause();
+    return;
+  }
+  if (e.target instanceof Element &&
+      e.target.closest('input, button, select, textarea')) return;
+
+  if (e.code === 'KeyC') {
+    game.switchCamera();
+    game.audio?.play('camera');
+  }
   if (e.code === 'KeyP' && !e.repeat) game.togglePause();
-  if (e.code === 'Escape' && game.state === 'paused') game.togglePause();
   if (e.code === 'KeyR' && game.state === 'paused') window.location.reload();
   if (e.code === 'KeyM' && game.state === 'paused') {
     e.preventDefault();
@@ -240,12 +245,47 @@ overlay.addEventListener('click', (event) => {
   else if (button.dataset.action === 'toggle-audio') toggleAudio();
 });
 
+overlay.addEventListener('input', (event) => {
+  if (event.target.id !== 'master-volume') return;
+  const value = Number(event.target.value);
+  game.audio?.setVolume(value / 100);
+  const output = overlay.querySelector('[data-volume-output]');
+  if (output) output.textContent = `${value}%`;
+  event.target.setAttribute('aria-valuetext', `${value}%`);
+});
+
 window.addEventListener('resize', () => {
   game.resizeWindow(window.innerWidth, window.innerHeight);
 });
 
 game.startGame();
+if (debugEnabled) {
+  window.__game = game;
+  window.__ui = { updateOverlay, updateHud };
+}
 const clock = new THREE.Timer();
+let hudAccumulator = 0;
+let debugFrames = 0;
+let debugSince = performance.now();
+
+function updateDebug() {
+  if (!debugEnabled || !debugElement) return;
+  debugFrames++;
+  const now = performance.now();
+  if (now - debugSince < 250) return;
+
+  const info = game.scene?.renderer?.info;
+  const render = info?.render;
+  const memory = info?.memory;
+  const fps = debugFrames * 1000 / (now - debugSince);
+  debugElement.textContent =
+    `${fps.toFixed(0)} fps · ${render?.calls ?? 0} calls · ` +
+    `${((render?.triangles ?? 0) / 1000).toFixed(0)}k tris · ` +
+    `${memory?.geometries ?? 0}g/${memory?.textures ?? 0}t · ` +
+    `${game.level?.entities?.length ?? 0} entities · ${game.state}`;
+  debugFrames = 0;
+  debugSince = now;
+}
 
 function loop() {
   requestAnimationFrame(loop);
@@ -256,8 +296,13 @@ function loop() {
       !input.isDown('Space')) restartReady = true;
 
   const distance = game.getDistance().toFixed(1);
-  const speed = Math.abs(game.level?.sonic?.logic.getSpeed().x ?? 0).toFixed(1);
-  updateHud(distance, speed);
+  const speed = Math.abs(game.level?.sonic?.logic.getSpeed().x ?? 0);
+  hudAccumulator += dt;
+  if (hudAccumulator >= 0.1) {
+    hudAccumulator = 0;
+    updateHud(distance, speed);
+  }
   updateOverlay(distance);
+  updateDebug();
 }
 loop();

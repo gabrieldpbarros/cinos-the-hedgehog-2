@@ -107,15 +107,16 @@ test('mesa layers stay inside their tile so copies never overlap', () => {
   assert.ok(Math.min(...xs) <= 1000 - layer.width / 2 && Math.max(...xs) >= 1000 + layer.width * 2);
   assert.equal(layer.group.position.y, 20, 'mesas move with the water so foam stays on the waterline');
 
-  // Each mesa has a foam ring lying flat at the water level.
-  const foams = layer.tiles[0].getObjectsByProperty('type', 'Mesh')
-    .filter((mesh) => mesh.geometry.type === 'RingGeometry');
-  assert.equal(foams.length, layer.mesas.length);
-  for (const foam of foams) {
-    foam.geometry.computeBoundingBox();
-    const { min, max } = foam.geometry.boundingBox;
-    assert.ok(Math.abs(min.y - max.y) < 1e-6 && Math.abs(min.y - (-12 + 0.2)) < 1e-6);
-  }
+  // The tile is merged by material: mesas, trees and foam rings no longer cost one
+  // draw call each. The foam still lies flat at the water level.
+  const meshes = layer.tiles[0].getObjectsByProperty('isMesh', true);
+  assert.ok(meshes.length <= 8, `tile has ${meshes.length} meshes, expected merged materials`);
+  assert.equal(new Set(meshes.map((mesh) => mesh.material)).size, meshes.length);
+  const foam = meshes.find((mesh) => mesh.material === layer.foamMaterial);
+  assert.ok(foam, 'merged foam mesh exists');
+  foam.geometry.computeBoundingBox();
+  const { min, max } = foam.geometry.boundingBox;
+  assert.ok(Math.abs(min.y - max.y) < 1e-6 && Math.abs(min.y - (-12 + 0.2)) < 1e-6);
 });
 
 test('water animates, steps with the camera in whole cells and has foam along the track', () => {

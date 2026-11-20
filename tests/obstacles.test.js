@@ -168,4 +168,11 @@ test('obstacle model is procedural, grounded and wider at the base than the spik
   assert.ok(dim.height > 1);
   assert.ok(dim.depth > 1);
   assert.ok(Math.abs(dim.centerPos.y - 0.05) < 1e-6);
+
+  // Base and spikes are baked into one geometry/material shared by every obstacle.
+  const other = createObstacleModel();
+  assert.equal(model.model.geometry, other.model.geometry);
+  assert.equal(model.model.material, other.model.material);
+  assert.equal(model.model.material.vertexColors, true);
+  assert.equal(model.model.geometry.attributes.color.count, model.model.geometry.attributes.position.count);
 });

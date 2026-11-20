@@ -1,4 +1,6 @@
 const STORAGE_KEY = 'cinos.muted';
+const VOLUME_KEY = 'cinos.volume';
+const DEFAULT_VOLUME = 0.7;
 const MUSIC_BPM = 138;
 
 // Trilha original de 32 passos, sem samples ou gravações de terceiros.
@@ -15,6 +17,7 @@ function midiToFrequency(note) {
 export class GameAudio {
   constructor() {
     this.muted = this.readMuted();
+    this.volume = this.readVolume();
     this.context = null;
     this.master = null;
     this.sfxBus = null;
@@ -48,6 +51,40 @@ export class GameAudio {
     } catch { /* localStorage pode estar indisponível. */ }
   }
 
+  readVolume() {
+    try {
+      if (typeof localStorage === 'undefined') return DEFAULT_VOLUME;
+      const raw = localStorage.getItem(VOLUME_KEY);
+      if (raw === null) return DEFAULT_VOLUME;
+      const value = Number(raw);
+      if (!Number.isFinite(value)) return DEFAULT_VOLUME;
+      return Math.min(1, Math.max(0, value));
+    } catch {
+      return DEFAULT_VOLUME;
+    }
+  }
+
+  writeVolume() {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(VOLUME_KEY, String(this.volume));
+      }
+    } catch { /* localStorage pode estar indisponível. */ }
+  }
+
+  setVolume(volume) {
+    this.volume = Number.isFinite(volume)
+      ? Math.min(1, Math.max(0, volume))
+      : DEFAULT_VOLUME;
+    this.writeVolume();
+    if (this.master && this.context) {
+      const now = this.context.currentTime;
+      this.master.gain.cancelScheduledValues(now);
+      this.master.gain.setTargetAtTime(this.muted ? 0 : this.volume, now, 0.01);
+    }
+    return this.volume;
+  }
+
   removeUnlockListeners() {
     if (typeof window === 'undefined' || !this.unlockHandler) return;
     window.removeEventListener('keydown', this.unlockHandler);
@@ -60,7 +97,7 @@ export class GameAudio {
     this.master = this.context.createGain();
     this.sfxBus = this.context.createGain();
     this.musicBus = this.context.createGain();
-    this.master.gain.value = this.muted ? 0 : 0.7;
+    this.master.gain.value = this.muted ? 0 : this.volume;
     this.sfxBus.gain.value = 0.55;
     this.musicBus.gain.value = 0.16;
     this.sfxBus.connect(this.master);
@@ -99,7 +136,7 @@ export class GameAudio {
     if (this.master && this.context) {
       const now = this.context.currentTime;
       this.master.gain.cancelScheduledValues(now);
-      this.master.gain.setTargetAtTime(this.muted ? 0 : 0.7, now, 0.01);
+      this.master.gain.setTargetAtTime(this.muted ? 0 : this.volume, now, 0.01);
     }
     return this.muted;
   }
@@ -158,12 +195,21 @@ export class GameAudio {
       case 'jump':
         this.tone(260, 620, 0.16, 'square', 0.055);
         break;
+      case 'land':
+        this.tone(150, 85, 0.09, 'triangle', 0.05);
+        break;
+      case 'brake':
+        this.tone(420, 120, 0.18, 'sawtooth', 0.035);
+        break;
       case 'stomp':
         this.tone(180, 70, 0.14, 'square', 0.1);
         break;
       case 'hit':
         this.tone(330, 70, 0.28, 'sawtooth', 0.1);
         this.tone(120, 55, 0.22, 'triangle', 0.08, 0, 0.04);
+        break;
+      case 'camera':
+        this.tone(500, 900, 0.06, 'square', 0.035);
         break;
       case 'pause':
         this.tone(660, 660, 0.08, 'square', 0.05);

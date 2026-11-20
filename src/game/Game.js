@@ -1,6 +1,6 @@
 import { Level } from "./Level.js";
 import { SceneView } from "./rendering/SceneView.js";
-import { GameAudio } from "./rendering/GameAudio.js";
+import { AudioManager } from "./rendering/audio/AudioManager.js";
 import { CONFIG } from "./constants.js";
 
 export class Game {
@@ -9,7 +9,7 @@ export class Game {
     this.state     = 'menu'; // menu | playing | paused | win | lose
     this.mainInput = input;
     this.elapsedTime = 0;
-    this.audio = new GameAudio();
+    this.audio = new AudioManager();
   }
 
   async startGame() {

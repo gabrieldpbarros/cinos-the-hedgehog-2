@@ -17,6 +17,15 @@ test('audio mute toggles and persists without an AudioContext', () => {
     assert.equal(audio.toggleMuted(), false);
     assert.equal(values.get('cinos.muted'), '0');
     assert.equal(new GameAudio().muted, false);
+
+    audio.startMusic();
+    assert.equal(audio.musicEnabled, true);
+    audio.stopMusic();
+    assert.equal(audio.musicEnabled, false);
+    audio.play('ring');
+    audio.play('land');
+    audio.play('brake');
+    audio.play('camera');
   } finally {
     delete globalThis.localStorage;
   }

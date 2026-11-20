@@ -322,10 +322,13 @@ export class Level {
     // O limite esquerdo é o penhasco no início do primeiro chunk; o corpo do Sonic encosta nele.
     this.sonic.logic.setMinX(this.terrain.chunks[0].initialX + this.sonic.logic.hitboxDim.length / 2);
     const wasOnGround = this.sonic.logic.onGround;
+    const wasBraking = this.sonic.logic.isBraking?.() ?? false;
     this.player.updateEntity(dt);
     if (wasOnGround && !this.sonic.logic.onGround && this.sonic.logic.getSpeed().y > 0) {
       this.audio?.play('jump');
     }
+    if (!wasOnGround && this.sonic.logic.onGround) this.audio?.play('land');
+    if (!wasBraking && this.sonic.logic.isBraking?.()) this.audio?.play('brake');
     for (const enemy of this.enemies) enemy.controller.updateEntity(dt);
     for (const obstacle of this.obstacles) obstacle.controller.updateEntity(dt);
 

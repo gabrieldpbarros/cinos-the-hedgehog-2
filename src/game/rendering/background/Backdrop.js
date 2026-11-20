@@ -160,9 +160,14 @@ const WATER_FRAGMENT = /* glsl */ `
   }`;
 
 // Espuma: faixa branca levemente transparente logo acima da linha d'água.
-const foamMaterial = () => new THREE.MeshBasicMaterial({
-  color: PALETTE.foam, transparent: true, opacity: 0.85, depthWrite: false, fog: false,
-});
+// Compartilhada por toda a cena; a geometria é quem varia.
+let sharedFoamMaterial;
+export function getFoamMaterial() {
+  sharedFoamMaterial ??= new THREE.MeshBasicMaterial({
+    color: PALETTE.foam, transparent: true, opacity: 0.85, depthWrite: false, fog: false,
+  });
+  return sharedFoamMaterial;
+}
 
 /**
  * Água low poly: malha com ondas animadas, facetas sombreadas, reflexos que cintilam e
@@ -216,7 +221,7 @@ export class WaterPlane {
     const foamGeometry = new THREE.PlaneGeometry(width, 1.1);
     foamGeometry.rotateX(-Math.PI / 2);
     for (const z of [5.45, -5.45]) {
-      const foam = new THREE.Mesh(foamGeometry, foamMaterial());
+      const foam = new THREE.Mesh(foamGeometry, getFoamMaterial());
       foam.position.set(0, 0.18, z);
       this.mesh.add(foam);
     }
@@ -435,9 +440,7 @@ function buildMesa(random, materials, trees, { radius, top, baseY, waterY, treeC
   foam.rotateX(-Math.PI / 2);
   foam.rotateY(-Math.PI / 2); // alinha os vértices do anel com os do cilindro
   foam.translate(0, waterY + 0.2, 0);
-  mesa.add(new THREE.Mesh(foam, new THREE.MeshBasicMaterial({
-    color: PALETTE.foam, transparent: true, opacity: 0.85, depthWrite: false,
-  })));
+  mesa.add(new THREE.Mesh(foam, getFoamMaterial()));
   const treeCount = random() < treeChance ? 1 + Math.floor(random() * Math.min(3, radius / 3)) : 0;
   for (let i = 0; i < treeCount; i++) {
     const tree = buildTree(random, trees, treeSize * (0.8 + 0.4 * random()));
@@ -450,6 +453,101 @@ function buildMesa(random, materials, trees, { radius, top, baseY, waterY, treeC
   return mesa;
 }
 
+// Copia um grupo de triângulos da geometria para uma geometria não indexada. Assim todas
+// as peças de um tile podem ser unidas por material, sem depender do layout de índices.
+function geometryForGroup(geometry, group = null) {
+  const index = geometry.index;
+  const position = geometry.attributes.position;
+  const normal = geometry.attributes.normal;
+  const uv = geometry.attributes.uv;
+  const start = group ? group.start : 0;
+  const count = group ? group.count : (index ? index.count : position.count);
+  const positions = new Float32Array(count * 3);
+  const normals = new Float32Array(count * 3);
+  const uvs = new Float32Array(count * 2);
+
+  for (let i = 0; i < count; i++) {
+    const vertex = index ? index.getX(start + i) : start + i;
+    positions[i * 3] = position.getX(vertex);
+    positions[i * 3 + 1] = position.getY(vertex);
+    positions[i * 3 + 2] = position.getZ(vertex);
+    if (normal) {
+      normals[i * 3] = normal.getX(vertex);
+      normals[i * 3 + 1] = normal.getY(vertex);
+      normals[i * 3 + 2] = normal.getZ(vertex);
+    }
+    if (uv) {
+      uvs[i * 2] = uv.getX(vertex);
+      uvs[i * 2 + 1] = uv.getY(vertex);
+    }
+  }
+
+  const result = new THREE.BufferGeometry();
+  result.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  result.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+  result.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  if (!normal) result.computeVertexNormals();
+  return result;
+}
+
+// Um Mesh pode usar um array de materiais (o corpo e a borda dos platôs usam). Este
+// separador devolve uma geometria por material para a fusão conseguir agrupar tudo.
+function splitByMaterial(mesh) {
+  const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+  const groups = mesh.geometry.groups;
+  const parts = [];
+  if (Array.isArray(mesh.material) && groups.length > 0) {
+    for (const group of groups) {
+      const material = materials[group.materialIndex] ?? materials[0];
+      if (material) parts.push({ geometry: geometryForGroup(mesh.geometry, group), material });
+    }
+  } else {
+    parts.push({ geometry: geometryForGroup(mesh.geometry), material: materials[0] });
+  }
+  return parts;
+}
+
+/**
+ * Funde todas as malhas de um grupo por material. O fundo procedural tem centenas de
+ * mesas, árvores e anéis de espuma; sem isso cada peça vira uma chamada de desenho.
+ * As geometrias originais são descartadas depois da fusão.
+ */
+function mergeStaticGroup(group) {
+  group.updateMatrixWorld(true);
+  const toLocal = new THREE.Matrix4().copy(group.matrixWorld).invert();
+  const byMaterial = new Map();
+  const originals = new Set();
+
+  group.traverse((object) => {
+    if (!object.isMesh) return;
+    object.updateWorldMatrix(true, false);
+    const local = new THREE.Matrix4().multiplyMatrices(toLocal, object.matrixWorld);
+    for (const part of splitByMaterial(object)) {
+      part.geometry.applyMatrix4(local);
+      if (!byMaterial.has(part.material)) byMaterial.set(part.material, []);
+      byMaterial.get(part.material).push(part.geometry);
+      originals.add(object.geometry);
+    }
+  });
+
+  group.clear();
+  for (const [material, geometries] of byMaterial) {
+    const merged = mergeGeometries(geometries, false);
+    if (merged) {
+      const mesh = new THREE.Mesh(merged, material);
+      mesh.castShadow = false;
+      mesh.receiveShadow = false;
+      group.add(mesh);
+      for (const geometry of geometries) geometry.dispose();
+    } else {
+      // Caso alguma geometria seja incompatível, mantém o visual em vez de sumir.
+      for (const geometry of geometries) group.add(new THREE.Mesh(geometry, material));
+    }
+  }
+  for (const geometry of originals) geometry.dispose();
+  return group;
+}
+
 /**
  * Fileira de platôs que repete sem emenda a cada `width` unidades (nenhum platô cruza a
  * borda do trecho). Usa os materiais da pista, então combina com o chão em que o Sonic corre.
@@ -460,6 +558,7 @@ export class MesaLayer {
     const random = seededRandom(seed);
     this.width = width;
     this.mesas = [];
+    this.foamMaterial = getFoamMaterial();
     const tile = new THREE.Group();
     let x = 0;
     for (;;) {
@@ -474,6 +573,7 @@ export class MesaLayer {
       tile.add(mesa);
       x += radius * 1.15;
     }
+    mergeStaticGroup(tile);
     this.group = new THREE.Group();
     this.tiles = TILE_OFFSETS.map((_, k) => (k === 0 ? tile : tile.clone()));
     this.group.add(...this.tiles);

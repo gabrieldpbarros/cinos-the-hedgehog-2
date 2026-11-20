@@ -7,6 +7,7 @@ import { Level } from '../src/game/Level.js';
 import { Terrain } from '../src/game/logic/terrain/Terrain.js';
 import { Chunk, chunkStrategies } from '../src/game/logic/terrain/Chunk.js';
 import { RingModel } from '../src/game/rendering/entities/RingModel.js';
+import { RingInstances } from '../src/game/rendering/entities/RingInstances.js';
 import { EntityLogic } from '../src/game/logic/entities/EntityLogic.js';
 import { Ring, RING } from '../src/game/logic/entities/Ring.js';
 import { Sonic } from '../src/game/logic/entities/Sonic.js';
@@ -48,6 +49,37 @@ test('real ring asset is centered, scaled and cloned without rotating the AABB',
   assert.equal(b.model.rotation.y, 0);
   assert.equal(a.root.rotation.y, 0);
   assert.deepEqual(a.hitboxHelper.box.getSize(new THREE.Vector3()).toArray(), [0.6, 0.6, 0.8]);
+});
+
+test('all rings share one instanced mesh while keeping their own transforms', () => {
+  const scene = new THREE.Scene();
+  const instances = new RingInstances(scene, 8);
+  const makeRing = (x) => new Entity(
+    new Ring(x, 4, `instances:${x}`, null),
+    new RingModel(template),
+  );
+  const first = makeRing(1);
+  const second = makeRing(2);
+
+  assert.equal(instances.add(first), true);
+  assert.equal(instances.add(second), true);
+  instances.update();
+
+  assert.equal(instances.mesh.isInstancedMesh, true);
+  assert.equal(instances.mesh.count, 2);
+  assert.equal(instances.mesh.castShadow, true);
+  assert.equal(first.model.model.visible, false, 'the source mesh is replaced by the instance');
+  assert.equal(first.getModel3D().getObject3D().position.x, 1);
+  const matrices = [new THREE.Matrix4(), new THREE.Matrix4()];
+  instances.mesh.getMatrixAt(0, matrices[0]);
+  instances.mesh.getMatrixAt(1, matrices[1]);
+  assert.notDeepEqual(matrices[0].elements, matrices[1].elements);
+
+  assert.equal(instances.remove(first), true);
+  instances.update();
+  assert.equal(instances.mesh.count, 1);
+  instances.dispose();
+  assert.equal(instances.mesh, null);
 });
 
 function playableLevel() {
