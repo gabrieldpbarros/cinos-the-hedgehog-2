@@ -25,7 +25,7 @@ gltf.buffers[0].uri = `data:application/octet-stream;base64,${(await readFile(ne
 const { scene: template } = await new GLTFLoader().parseAsync(JSON.stringify(gltf), '');
 
 function makeLevel(strategy = chunkStrategies.flat) {
-  const level = new Level({ isDown: () => false });
+  const level = new Level({ isDown: () => false }, 1000, { spawnHazards: false });
   level.startPosX = 0;
   level.finishX = 1000;
   level.entities = [];
@@ -86,15 +86,17 @@ test('collection precedes damage in the same update, one impact consumes balance
 test('zero balance loses, protected contact survives, and invulnerability ignores all common contact', () => {
   const level = playableLevel();
   level.sonic.logic.position.x = 5;
-  assert.equal(level.resolveEnemyContact().defeated, true);
+  assert.equal(level.resolveHazardContact().defeated, true);
   level.ringBalance = 20;
-  assert.equal(level.resolveEnemyContact().added.length, 20);
+  assert.equal(level.resolveHazardContact().added.length, 20);
   assert.equal(level.ringBalance, 0);
   level.ringBalance = 2;
-  assert.equal(level.resolveEnemyContact().added.length, 0);
+  assert.equal(level.resolveHazardContact().added.length, 0);
   assert.equal(level.ringBalance, 2);
   level.sonic.logic.invulnerabilityRemaining = 0;
-  assert.equal(level.resolveEnemyContact().added.length, 2);
+  level.sonic.logic.onGround = true;
+  level.sonic.logic.speed.y = 0;
+  assert.equal(level.resolveHazardContact().added.length, 2);
 });
 
 test('hurt impulse points away, ignores held movement/jump until landing, then controls resume', () => {
