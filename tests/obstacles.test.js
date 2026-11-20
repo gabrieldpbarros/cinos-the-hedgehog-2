@@ -7,6 +7,7 @@ import { EntityLogic } from '../src/game/logic/entities/EntityLogic.js';
 import { Entity } from '../src/game/entities/Entity.js';
 import { EntityModel } from '../src/game/rendering/entities/EntityModel.js';
 import { createObstacleModel } from '../src/game/rendering/entities/ObstacleModel.js';
+import { RING } from '../src/game/logic/entities/Ring.js';
 
 function makeLevel() {
   const level = new Level({ isDown: () => false }, 1000, { spawnHazards: false });
@@ -84,6 +85,24 @@ test('spawnAhead never places hazards after the finish line', async () => {
 
   assert.ok(spawned.length > 0);
   assert.ok(spawned.every((x) => x < level.finishX));
+});
+
+test('obstacle spawn skips a position occupied by a static ring', () => {
+  const level = makeLevel();
+  level.rings.push({
+    logic: {
+      active: true,
+      scattered: false,
+      getPosition: () => ({ x: 14, y: 0.7, z: 0 }),
+      hitboxDim: { length: RING.hitbox, heigth: RING.hitbox, depth: RING.depth },
+    },
+  });
+
+  level.spawnObstacle(14, 0);
+
+  assert.equal(level.obstacles.length, 0);
+  assert.equal(level.spawnedEntities.length, 0);
+  assert.equal(level.entities.length, 0);
 });
 
 test('spinning into an enemy defeats it and bounces Sonic', () => {

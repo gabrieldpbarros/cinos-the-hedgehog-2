@@ -281,6 +281,22 @@ test('ring layout follows all terrain types, precedes enemy, and stays bounded o
   }
 });
 
+test('ring layout skips positions occupied by hazards', () => {
+  const level = makeLevel();
+  level.rings = [];
+  level.entities = [];
+  level.ringLayouts.clear();
+
+  const hazardLogic = new EntityLogic(1.2, level.terrain.getHeightAt(1) + 0.7, 0, 'enemy', false);
+  hazardLogic.setHitbox(0.8, 0.8, 0.8);
+  level.enemies.push({ logic: hazardLogic });
+
+  const added = level.syncRingChunks().added;
+  assert.equal(added.length, 8);
+  assert.ok(!added.some((ring) => ring.logic.position.x === 1));
+  assert.ok(added.some((ring) => ring.logic.position.x === 2));
+});
+
 test('swept collection is immediate and unique, persists on chunk refresh, and resets in a new level', () => {
   const level = makeLevel();
   const sonic = new EntityLogic(4, 4.7, 0, 'player', false);

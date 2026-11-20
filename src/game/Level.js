@@ -76,7 +76,27 @@ export class Level {
     this.nextSpawnX = 14;
     this.spawnedEntities = [];
     this.spawnPromise = null;
+    this.enemies = [];
     this.obstacles = [];
+  }
+
+  overlapsHazard(x, y, width, height) {
+    return [...this.enemies, ...this.obstacles].some(({ logic }) => {
+      const position = logic.getPosition();
+      const hitbox = logic.hitboxDim;
+      return Math.abs(x - position.x) < (width + hitbox.length) / 2 &&
+        Math.abs(y - position.y) < (height + hitbox.heigth) / 2;
+    });
+  }
+
+  overlapsStaticRing(x, y, width, height) {
+    return this.rings.some(({ logic }) => {
+      if (!logic.active || logic.scattered) return false;
+      const position = logic.getPosition();
+      const hitbox = logic.hitboxDim;
+      return Math.abs(x - position.x) < (width + hitbox.length) / 2 &&
+        Math.abs(y - position.y) < (height + hitbox.heigth) / 2;
+    });
   }
 
   async buildLevel() {
@@ -139,6 +159,8 @@ export class Level {
         const x = chunk.initialX + offset;
         if (x < this.startPosX || x >= this.finishX) return;
         const y = chunk.getHeightAtX(x) + (index >= 6 ? 2.8 : 0.7);
+        // Não cria anel dentro de um inimigo ou espinho já existente.
+        if (this.overlapsHazard(x, y, RING.hitbox, RING.hitbox)) return;
         const logic = new Ring(x, y, `${chunk.initialX}:${index}`, chunk.initialX);
         const ring = new Entity(logic, new RingModel(this.ringTemplate));
         ring.setHitbox(RING.hitbox, RING.hitbox, RING.depth);
@@ -233,6 +255,12 @@ export class Level {
     const enemy = await makeBuzzBomber(x, flyHeight);
     enemy.controller = new StaticController(enemy);
     enemy.setOnGround(flyHeight);
+    if (this.overlapsStaticRing(
+      enemy.logic.position.x,
+      enemy.logic.position.y,
+      enemy.logic.hitboxDim.length,
+      enemy.logic.hitboxDim.heigth,
+    )) return;
     this.enemies.push(enemy);
     this.entities.push(enemy);
     this.spawnedEntities.push(enemy);
@@ -241,6 +269,15 @@ export class Level {
   spawnObstacle(x, groundY) {
     const obstacle = makeObstacle(x, groundY);
     obstacle.controller = new StaticController(obstacle);
+    if (this.overlapsStaticRing(
+      obstacle.logic.position.x,
+      obstacle.logic.position.y,
+      obstacle.logic.hitboxDim.length,
+      obstacle.logic.hitboxDim.heigth,
+    )) {
+      obstacle.model.dispose?.();
+      return;
+    }
     this.obstacles.push(obstacle);
     this.entities.push(obstacle);
     this.spawnedEntities.push(obstacle);

@@ -68,7 +68,7 @@ O Vite abre em `http://localhost:3001`.
 ### Verificações
 
 ```bash
-npm test                  # 49 testes
+npm test                  # 67 testes
 npx eslint src tests      # análise estática
 npm run build             # build de produção
 ```
