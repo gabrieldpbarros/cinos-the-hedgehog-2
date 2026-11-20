@@ -42,8 +42,7 @@ src/game/
   constants.js                parâmetros de movimento e tempo
   entities/Entity.js          ponte entre lógica e modelo
   logic/                      entrada, controladores, entidades e terreno
-  rendering/                  cena, luzes, modelos, anéis, obstáculos e áudio
-public/assets/                skybox
+  rendering/                  cena, luzes, fundo procedural, modelos, anéis, obstáculos e áudio
 public/fonts/                 Bungee e Chakra Petch + licenças OFL
 public/model-imports/         modelos e arquivos associados
 tests/                        testes Node da lógica e da apresentação
@@ -56,7 +55,7 @@ Instalem dependências na raiz com `npm ci`. Usem `npm run dev` para abrir o Vit
 
 1. **Demonstração:** gravar o vídeo mostrando movimentação, coleta, dano, derrota de inimigo, espinhos, pausa, vitória e derrota, e vincular o link no README.
 2. **Apresentação final:** revisar o vídeo, os créditos de modelos/fontes e o relatório da disciplina.
-3. **Melhorias opcionais:** modo infinito selecionável, novos tipos de obstáculo e skybox definitiva.
+3. **Melhorias opcionais:** modo infinito selecionável, novos tipos de obstáculo e mais elementos no fundo procedural.
 
 ## Critérios de verificação
 

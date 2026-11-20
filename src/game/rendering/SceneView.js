@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { TerrainModel } from './terrain/TerrainModel.js';
+import { getTerrainMaterials } from './terrain/GreenHillChunkModel.js';
 import { SceneLighting } from './SceneLighting.js';
+import { Backdrop } from './background/Backdrop.js';
 
 export class SceneView {
   constructor(canvas) {
@@ -24,16 +26,9 @@ export class SceneView {
 
     this.lighting = new SceneLighting(this.scene);
 
-    // Skybox
-    this.skybox_loader = new THREE.TextureLoader();
-    this.skybox_texture = this.skybox_loader.load(
-      `${import.meta.env.BASE_URL}assets/temp_skybox.png`,
-      () => {
-        this.skybox_texture.mapping = THREE.EquirectangularReflectionMapping;
-        this.skybox_texture.colorSpace = THREE.SRGBColorSpace;
-        this.scene.background = this.skybox_texture;
-      }
-    );
+    // Céu, água, colinas e nuvens procedurais (low poly)
+    this.backdrop = new Backdrop(this.scene, getTerrainMaterials());
+    this.terrainY = 0;
 
     this.resize(window.innerWidth, window.innerHeight);
   }
@@ -115,7 +110,7 @@ export class SceneView {
         : this.cameras.side;
   }
 
-  sync(playerPosition, terrainY) {
+  sync(playerPosition, terrainY, dt = 0) {
     const { x } = playerPosition;
     this.cameras.side.position.set(x, terrainY + 4.5, 12);
     this.cameras.side.lookAt(x, terrainY + 1, 0);
@@ -123,9 +118,12 @@ export class SceneView {
     this.cameras.oneQuarter.lookAt(x, terrainY + 1, 0);
 
     this.lighting.followTerrain(x, terrainY);
+    this.terrainY = terrainY;
+    this.backdrop.advance(dt);
   }
 
   render() {
+    this.backdrop.follow(this.activeCamera, this.terrainY);
     this.renderer.render(this.scene, this.activeCamera);
   }
 }

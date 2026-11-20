@@ -281,7 +281,8 @@ export class Level {
   }
 
   update(dt) {
-    this.sonic.logic.setMinX(this.terrain.chunks[0].initialX);
+    // O limite esquerdo é o penhasco no início do primeiro chunk; o corpo do Sonic encosta nele.
+    this.sonic.logic.setMinX(this.terrain.chunks[0].initialX + this.sonic.logic.hitboxDim.length / 2);
     this.player.updateEntity(dt);
     for (const enemy of this.enemies) enemy.controller.updateEntity(dt);
     for (const obstacle of this.obstacles) obstacle.controller.updateEntity(dt);

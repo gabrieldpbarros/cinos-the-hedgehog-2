@@ -3,6 +3,8 @@ import test from 'node:test';
 import { Chunk, chunkStrategies } from '../src/game/logic/terrain/Chunk.js';
 import { Terrain } from '../src/game/logic/terrain/Terrain.js';
 import { TerrainModel } from '../src/game/rendering/terrain/TerrainModel.js';
+import { CLIFF } from '../src/game/rendering/terrain/StartCliffModel.js';
+import { CONFIG } from '../src/game/constants.js';
 
 globalThis.document = {
   createElement: () => ({
@@ -53,7 +55,7 @@ test('terrain and visuals keep chunks behind and ahead when recycling', () => {
   assert.equal(added.length, 1);
   assert.equal(added[0].initialX, 310);
   assert.equal(terrain.chunks.length, 8);
-  assert.equal(visual.getGround().children.length, 8);
+  assert.equal(visual.getGround().children.length, 9, '8 chunks + start cliff');
   assert.equal(disposed, 1);
   assert.equal(canvases, 2);
 
@@ -65,7 +67,11 @@ test('terrain and visuals keep chunks behind and ahead when recycling', () => {
   const more = terrain.update(190);
   visual.updateGround(more);
   assert.equal(more.length, 1);
-  assert.equal(visual.getGround().children.length, 8);
+  assert.equal(visual.getGround().children.length, 9);
+  // O penhasco acompanha o primeiro chunk ativo: é o limite esquerdo do Sonic.
+  const cliff = visual.startCliff.getModel();
+  assert.equal(cliff.position.x, terrain.chunks[0].initialX);
+  assert.equal(cliff.position.y, terrain.chunks[0].getHeightAtX(terrain.chunks[0].initialX));
   assert.equal(visual.chunkModels[0].materials[0], visual.chunkModels[7].materials[0]);
   assert.equal(visual.chunkModels[0].materials[1].map, visual.chunkModels[7].materials[1].map);
   for (let i = 0; i < 8; i++) {
@@ -76,4 +82,10 @@ test('terrain and visuals keep chunks behind and ahead when recycling', () => {
       assert.equal(terrain.chunks[i].surfaceStart, terrain.chunks[i - 1].surfaceEnd);
     }
   }
+});
+
+test('start cliff is taller than a jump and the soil reaches below the background water', () => {
+  const jumpHeight = CONFIG.jumpVelocity ** 2 / (2 * -CONFIG.gravity);
+  assert.ok(CLIFF.height > jumpHeight + 1.5, 'Sonic cannot jump over or onto it');
+  assert.ok(Chunk.soilDepth > 45, 'oblique camera sees soil, not void, under the track');
 });

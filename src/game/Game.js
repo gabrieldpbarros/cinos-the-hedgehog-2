@@ -23,10 +23,10 @@ export class Game {
     this.state  = 'playing';
   }
 
-  syncScene() {
+  syncScene(dt = 0) {
     const position = this.level.sonic.logic.getPosition();
     const terrainY = this.level.terrain.getHeightAt(position.x) ?? position.y;
-    this.scene.sync(position, terrainY);
+    this.scene.sync(position, terrainY, dt);
     this.scene.render();
   }
 
@@ -49,7 +49,7 @@ export class Game {
         this.level.sonic.logic.getPosition().x >= this.level.finishX) {
       this.state = 'win';
     }
-    this.syncScene();
+    this.syncScene(dt);
   }
 
   getElapsedTime() {

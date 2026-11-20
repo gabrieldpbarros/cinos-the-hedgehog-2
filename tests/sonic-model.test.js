@@ -198,3 +198,31 @@ test('Sonic turns with horizontal movement without shifting its visual center', 
   assert.equal(model.model.rotation.y, Math.PI / 2);
   assert.ok(center().distanceTo(originalCenter) < 1e-6);
 });
+
+test('only the blue fur of the Sonic body material is remapped to a brighter blue', async () => {
+  const { boostSonicBlue, SONIC_BLUE } = await import('../src/game/rendering/entities/SonicModel.js');
+  const material = new THREE.MeshStandardMaterial({ name: SONIC_BLUE.material });
+  boostSonicBlue(material);
+  const shader = { fragmentShader: 'void main() {\n#include <map_fragment>\n}' };
+  material.onBeforeCompile(shader);
+  assert.ok(shader.fragmentShader.includes('#include <map_fragment>'), 'keeps the texture lookup');
+  assert.ok(shader.fragmentShader.indexOf('blueness') > shader.fragmentShader.indexOf('#include <map_fragment>'));
+
+  // Same math as the shader, on the measured texture navy and on Sonic's peach skin.
+  const remap = (rgb) => {
+    const [r, g, b] = rgb;
+    const t = Math.min(1, Math.max(0, ((b - Math.max(r, g)) / Math.max(b, 1e-4) - 0.3) / 0.3));
+    const blueness = t * t * (3 - 2 * t);
+    const target = SONIC_BLUE.target;
+    const scale = b / SONIC_BLUE.textureBlue;
+    return [r + (target.r * scale - r) * blueness, g + (target.g * scale - g) * blueness, b + (target.b * scale - b) * blueness];
+  };
+  const navy = new THREE.Color('#15248b');
+  const boosted = new THREE.Color(...remap([navy.r, navy.g, navy.b]));
+  const hsl = {};
+  boosted.getHSL(hsl, THREE.SRGBColorSpace);
+  assert.ok(hsl.h > 0.58 && hsl.h < 0.63, 'true blue, not purple');
+  assert.ok(boosted.b > navy.b * 2.5, 'much brighter blue');
+  const skin = new THREE.Color('#f0c090');
+  assert.deepEqual(remap([skin.r, skin.g, skin.b]), [skin.r, skin.g, skin.b]);
+});

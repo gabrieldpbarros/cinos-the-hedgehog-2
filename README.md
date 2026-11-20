@@ -85,9 +85,8 @@ src/game/
   constants.js                parâmetros de movimento e tempo
   entities/Entity.js          ponte entre lógica e modelo
   logic/                      entrada, controladores, entidades e terreno
-  rendering/                  cena, luzes, modelos, anéis, obstáculos e áudio
+  rendering/                  cena, luzes, fundo procedural, modelos, anéis, obstáculos e áudio
 public/fonts/                 fontes Bungee e Chakra Petch + licenças OFL
-public/assets/                skybox
 public/model-imports/         modelos e texturas
 tests/                        testes Node da lógica e da apresentação
 docs/                         arquitetura, relatórios, guias e créditos
@@ -110,6 +109,7 @@ Os detalhes e os textos integrais das licenças estão em [`docs/model-credits.m
 - [Inimigos e obstáculos](docs/obstacles.md)
 - [Créditos das fontes](docs/font-credits.md)
 - [Montagem dos chunks](docs/montagem-chunks.md)
+- [Fundo procedural, água e shaders](docs/fundo-procedural.md)
 - [Guia de Three.js](docs/threejs-guide.md)
 
 ### Demonstração

@@ -20,6 +20,33 @@ const MIN_GAIT_RATE = 0.3;
 const WALK_TO_JOG = [5, 9];
 const JOG_TO_RUN = [13, 17];
 
+// O pelo do modelo é um azul-marinho escuro (#15248b; azul linear mediano 0,258).
+// Remapeamos só os texels azuis para um azul de Sonic mais vivo (#1a52f0), mantendo o
+// sombreamento da textura; pele, olhos, sapatos e luvas ficam como estão.
+export const SONIC_BLUE = {
+  material: 'sonic_gm_body',
+  textureBlue: 0.258,
+  target: new THREE.Color('#1a52f0'),
+};
+
+/** Injeta o remapeamento de azul no shader do material do corpo do Sonic. */
+export function boostSonicBlue(material) {
+  const target = SONIC_BLUE.target;
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', /* glsl */ `
+      #include <map_fragment>
+      {
+        vec3 base = diffuseColor.rgb;
+        // "Azulidade": quanto o canal azul domina os outros dois (0 em pele, olhos e luvas).
+        float blueness = smoothstep(0.3, 0.6, (base.b - max(base.r, base.g)) / max(base.b, 1e-4));
+        vec3 sonicBlue = vec3(${target.r.toFixed(5)}, ${target.g.toFixed(5)}, ${target.b.toFixed(5)})
+          * (base.b / ${SONIC_BLUE.textureBlue.toFixed(3)});
+        diffuseColor.rgb = mix(base, sonicBlue, blueness);
+      }`);
+  };
+  material.needsUpdate = true;
+}
+
 /** Pesos de Walk, Jog e Run para uma velocidade; somam 1 e mudam suavemente. */
 export function gaitWeights(speed) {
   const jog = THREE.MathUtils.smoothstep(speed, ...WALK_TO_JOG);
@@ -65,6 +92,7 @@ export class SonicModel extends EntityModel {
       for (const material of materials) {
         material.metalness = 0.05;
         material.roughness = 0.6;
+        if (material.name === SONIC_BLUE.material) boostSonicBlue(material);
       }
     });
 

@@ -6,7 +6,7 @@ import { Terrain } from '../src/game/logic/terrain/Terrain.js';
 test('every enemy updates, and those behind the first chunk are removed', () => {
   const level = new Level(null, 1000, { spawnHazards: false });
   level.terrain = new Terrain(0);
-  level.sonic = { logic: { setMinX() {}, getPosition: () => ({ x: 200 }), checkCollision: () => false } };
+  level.sonic = { logic: { setMinX() {}, hitboxDim: { length: 1 }, getPosition: () => ({ x: 200 }), checkCollision: () => false } };
   level.player = { updateEntity() {} };
   level.entities = [];
   level.syncRingChunks = () => ({ added: [], removed: [] });
