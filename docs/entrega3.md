@@ -1,5 +1,7 @@
 # Relatório 3 de Computação Gráfica: Cinos the Hedgehog 2
 
+> **Documento histórico.** O estado abaixo corresponde à entrega 3. A `main` atual já inclui anéis, obstáculos, pontuação, pausa, vitória e derrota; consulte o [README](../README.md) e a [arquitetura](arquitetura-engine.md) para o estado vigente.
+
 ## Evolução em relação à entrega 2
 
 Na segunda entrega, o projeto apresentava o modelo tridimensional do Sonic, uma cena inicial com terreno em blocos e texturas procedurais. Desde então, a cena passou a acompanhar o deslocamento do personagem e a oferecer uma segunda perspectiva de jogo.

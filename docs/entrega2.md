@@ -1,5 +1,7 @@
 # Relatório de Computação Gráfica: Cinos the Hedgehog 2
 
+> **Documento histórico.** O estado abaixo corresponde à entrega 2. A `main` atual já inclui anéis, obstáculos, pontuação, pausa, vitória e derrota; consulte o [README](../README.md) e a [arquitetura](arquitetura-engine.md) para o estado vigente.
+
 **Integrantes:** Davi Santos, Felipe Estevanatto, Gabriel Delgado, Guilherme Seyfart e João Vitor Gomes.  
 **Ferramentas:** Bun, Vite, Three.js, ESLint e GitHub Actions.
 
