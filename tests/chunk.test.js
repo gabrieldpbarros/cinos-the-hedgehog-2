@@ -26,7 +26,7 @@ test('chunks keep height and texture distance continuous across ramps', () => {
   assert.ok(Math.abs(up.surfaceEnd - up.surfaceStart - Math.hypot(Chunk.length, 2)) < 1e-12);
 });
 
-test('terrain and visuals recycle five chunks when Sonic reaches the third', () => {
+test('terrain and visuals keep chunks behind and ahead when recycling', () => {
   let canvases = 0;
   const createElement = globalThis.document.createElement;
   globalThis.document.createElement = () => {
@@ -36,9 +36,10 @@ test('terrain and visuals recycle five chunks when Sonic reaches the third', () 
   const terrain = new Terrain(0);
   const visual = new TerrainModel('green_hill');
   visual.createGround(terrain.chunks);
+  assert.equal(terrain.chunks.length, 8);
   assert.equal(canvases, 2);
 
-  assert.equal(terrain.update(69).length, 0);
+  assert.equal(terrain.update(149).length, 0);
   const first = visual.chunkModels[0];
   let disposed = 0;
   first.model.geometry.addEventListener('dispose', () => disposed++);
@@ -47,22 +48,27 @@ test('terrain and visuals recycle five chunks when Sonic reaches the third', () 
     material.map.addEventListener('dispose', () => disposed++);
   }
 
-  const added = terrain.update(70);
+  const added = terrain.update(150);
   visual.updateGround(added);
   assert.equal(added.length, 1);
-  assert.equal(added[0].initialX, 190);
-  assert.equal(terrain.chunks.length, 5);
-  assert.equal(visual.getGround().children.length, 5);
+  assert.equal(added[0].initialX, 310);
+  assert.equal(terrain.chunks.length, 8);
+  assert.equal(visual.getGround().children.length, 8);
   assert.equal(disposed, 1);
   assert.equal(canvases, 2);
 
+  // O primeiro chunk ainda fica 120 unidades atrás do jogador.
+  assert.equal(terrain.chunks[0].initialX, 30);
+  assert.notEqual(terrain.getHeightAt(30), null);
+  assert.equal(terrain.getHeightAt(29), null);
+
   const more = terrain.update(190);
   visual.updateGround(more);
-  assert.equal(more.length, 3);
-  assert.equal(visual.getGround().children.length, 5);
-  assert.equal(visual.chunkModels[0].materials[0], visual.chunkModels[4].materials[0]);
-  assert.equal(visual.chunkModels[0].materials[1].map, visual.chunkModels[4].materials[1].map);
-  for (let i = 0; i < 5; i++) {
+  assert.equal(more.length, 1);
+  assert.equal(visual.getGround().children.length, 8);
+  assert.equal(visual.chunkModels[0].materials[0], visual.chunkModels[7].materials[0]);
+  assert.equal(visual.chunkModels[0].materials[1].map, visual.chunkModels[7].materials[1].map);
+  for (let i = 0; i < 8; i++) {
     assert.equal(visual.chunkModels[i].chunk, terrain.chunks[i]);
     if (i > 0) {
       assert.equal(terrain.chunks[i].initialX, terrain.chunks[i - 1].initialX + Chunk.length);

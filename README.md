@@ -18,13 +18,16 @@ https://gabrieldpbarros.github.io/cinos-the-hedgehog-2/
 
 O projeto é um jogo 3D de corrida com câmera em perspectiva, terreno procedural, Sonic animado em GLB, BuzzBombers, anéis e obstáculos.
 
-- Movimento acelerado, frenagem, salto, giro, agachamento e duas câmeras.
+- Movimento acelerado, frenagem, salto, giro, agachamento com pose visual e duas câmeras.
 - Coleta de anéis com HUD, saldo, espalhamento, recoleta e invulnerabilidade.
 - Inimigos que podem ser derrotados ao pular/girar e espinhos que causam dano.
 - Perda de anéis ao encostar em um perigo; sem saldo, a corrida termina.
 - Vitória ao alcançar 1000 m, tela de resultados com tempo, anéis e nota.
 - Pausa com lista de controles e botões para continuar ou reiniciar.
 - Reinício por teclado ou botão após vitória, derrota ou pausa.
+- HUD com distância, velocidade, anéis e cronômetro da fase.
+- Terreno com oito chunks ativos; o jogador pode voltar alguns trechos sem o mapa sumir.
+- Hazards gerados longe da segunda câmera para não aparecerem “nascendo” na tela.
 
 ### Controles
 
@@ -32,7 +35,7 @@ O projeto é um jogo 3D de corrida com câmera em perspectiva, terreno procedura
 | --- | --- |
 | Mover para a esquerda/direita | `A` / `D` ou `←` / `→` |
 | Pular e girar | `Espaço` |
-| Agachar e reduzir a velocidade | `Ctrl` esquerdo/direito |
+| Agachar (pose visual) e reduzir a velocidade | `Ctrl` esquerdo/direito |
 | Trocar de câmera | `C` |
 | Pausar/continuar | `P` ou `Esc` |
 | Reiniciar na pausa | `R` |
@@ -46,7 +49,7 @@ O menu de pausa repete esses atalhos em formato de teclas e oferece os botões *
 - Com saldo, o contato com BuzzBomber ou espinhos consome todos os anéis, espalha-os pelo cenário e concede 2 segundos de invulnerabilidade.
 - Sem saldo, o contato com um perigo encerra a corrida.
 - Pular sobre um BuzzBomber derrota o inimigo e dá um pequeno impulso vertical.
-- As telas de vitória e derrota mostram **anéis carregados / total coletado** e calculam a nota de A a F por anéis por minuto.
+- As telas de vitória e derrota mostram **tempo**, **anéis carregados / total coletado** e calculam a nota de A a F por anéis por minuto.
 
 ### Instalação
 
@@ -64,7 +67,7 @@ O Vite abre em `http://localhost:3001`.
 ### Verificações
 
 ```bash
-npm test                  # 48 testes
+npm test                  # 49 testes
 npx eslint src tests      # análise estática
 npm run build             # build de produção
 ```

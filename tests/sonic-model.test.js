@@ -85,6 +85,35 @@ test('Sonic animation follows jump and absolute horizontal speed', () => {
   assert.ok(Math.abs(model.model.position.y - baseY) < 1e-9);
 });
 
+test('holding crouch lowers and compresses the model without a dedicated clip', () => {
+  const scene = new THREE.Group();
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshStandardMaterial()));
+  const clips = ['Idle', 'Walk', 'Jog', 'Run', 'Spin', 'Brake'].map(
+    (name) => new THREE.AnimationClip(name, 1, []),
+  );
+  const model = new SonicModel(scene, clips);
+  const logic = {
+    onGround: true,
+    speed: { x: 0, y: 0 },
+    currentActions: new Set(['CROUCH']),
+    getSpeed() { return this.speed; },
+    isSpinning() { return !this.onGround || this.currentActions.has('JUMP'); },
+    isBraking() { return false; },
+  };
+  const baseY = model.model.position.y;
+  const baseScaleY = model.baseScaleY;
+
+  for (let i = 0; i < 20; i++) model.update(0.05, logic);
+  assert.equal(model.activeAction.getClip().name, 'Idle');
+  assert.ok(model.model.scale.y < baseScaleY);
+  assert.ok(model.model.position.y < baseY);
+
+  logic.currentActions.delete('CROUCH');
+  for (let i = 0; i < 20; i++) model.update(0.05, logic);
+  assert.ok(Math.abs(model.model.scale.y - baseScaleY) < 1e-9);
+  assert.ok(Math.abs(model.model.position.y - baseY) < 1e-9);
+});
+
 test('Sonic turns with horizontal movement without shifting its visual center', () => {
   const scene = new THREE.Group();
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshStandardMaterial());

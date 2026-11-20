@@ -2,7 +2,7 @@
 
 ## Objetivo e estado atual
 
-O projeto é um jogo 3D de corrida inspirado no protótipo feito em Scratch e na estética de Green Hill. O Sonic pode andar nos dois sentidos, acelerar, frear, agachar e pular; o salto também ativa o giro usado para derrotar inimigos. O HUD mostra distância, velocidade e saldo de anéis.
+O projeto é um jogo 3D de corrida inspirado no protótipo feito em Scratch e na estética de Green Hill. O Sonic pode andar nos dois sentidos, acelerar, frear, agachar (com pose procedural) e pular; o salto também ativa o giro usado para derrotar inimigos. O HUD mostra distância, velocidade, saldo de anéis e tempo da fase.
 
 A `main` atual já possui:
 
@@ -10,7 +10,9 @@ A `main` atual já possui:
 - BuzzBombers e espinhos gerados ao longo da fase;
 - dano com consumo do saldo de anéis e derrota quando o saldo chega a zero;
 - pausa com lista de controles e botões de continuar/reiniciar;
-- vitória em 1000 m, tela de resultados com tempo, **anéis carregados / total coletado** e nota;
+- vitória em 1000 m, tela de resultados com **tempo**, **anéis carregados / total coletado** e nota;
+- terreno com oito chunks ativos, permitindo voltar alguns trechos;
+- hazards gerados a 140 unidades para não aparecerem na segunda câmera;
 - reinício por teclado ou botão;
 - duas câmeras em perspectiva, luz ambiente, duas luzes direcionais, terreno texturizado e modelos 3D.
 
@@ -22,7 +24,7 @@ A interface usa as fontes abertas Bungee e Chakra Petch, com créditos em [font-
 | --- | --- |
 | Tecnologia | Three.js com Vite. `src/main.js` inicia o jogo, o loop e a interface; `Game` coordena regras, nível e cena. |
 | Coordenadas | X é avanço, Y é altura e Z é profundidade. `position` na lógica representa o centro da hitbox; o modelo recebe um deslocamento visual para alinhar suas origens. |
-| Terreno | `Terrain` guarda cinco `Chunk` lógicos. Cada chunk tem 40 unidades em X, 10 em Z e espessura de terra de 3 unidades abaixo de cada ponta da superfície. `GreenHillChunkModel` gera as malhas e texturas. |
+| Terreno | `Terrain` mantém oito `Chunk` lógicos, deixando três atrás do jogador para permitir voltar. Cada chunk tem 40 unidades em X, 10 em Z e espessura de terra de 3 unidades abaixo de cada ponta da superfície. `GreenHillChunkModel` gera as malhas e texturas. |
 | Controle | `Input` guarda teclas pressionadas; controladores traduzem esse estado em ações. A entidade interpreta ações e atualiza a física. Regras de movimento não devem depender de Three.js. |
 | Colisão | `EntityLogic.checkCollision` usa varredura de segmento contra AABB. `Level` resolve coleta de anéis, contato com hazards, dano e derrota. |
 | Pontuação | Saldo de anéis no HUD; ao final, anéis carregados / total coletado e nota de A a F por anéis por minuto. |
@@ -58,7 +60,7 @@ Instalem dependências na raiz com `npm ci`. Usem `npm run dev` para abrir o Vit
 
 ## Critérios de verificação
 
-Testem deslocamento nos dois sentidos, salto repetido, frenagem, agachamento, troca de câmera, pausa, coleta de anéis, dano com e sem saldo, derrota de inimigo ao girar, colisão com espinhos, vitória em 1000 m e reinício. Confiram que o HUD e as telas finais usam o saldo de anéis correto e que a tela final mostra **saldo / total coletado**.
+Testem deslocamento nos dois sentidos, salto repetido, frenagem, pose de agachamento, troca de câmera, pausa, coleta de anéis, dano com e sem saldo, derrota de inimigo ao girar, colisão com espinhos, vitória em 1000 m e reinício. Confiram o cronômetro no HUD e nas telas finais, o saldo de anéis e a tela final com **saldo / total coletado**. Também voltem alguns chunks após avançar e verifiquem que o mapa continua existindo.
 
 No terreno, verifiquem continuidade entre chunks, descarte dos antigos e preservação das texturas nas rampas. Para mudanças de engine, executem `npm test`, `npx eslint src tests` e `npm run build`; depois testem no navegador em ambas as câmeras e redimensionem a janela.
 

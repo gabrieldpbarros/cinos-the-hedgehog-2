@@ -69,7 +69,8 @@ export class Level {
 
     this.random = options.random ?? Math.random;
     this.spawnHazards = options.spawnHazards ?? true;
-    this.spawnAheadDistance = 45;
+    // Maior que a área visível da segunda câmera; evita hazards "nascendo" na tela.
+    this.spawnAheadDistance = 140;
     this.minSpawnGap = 10;
     this.maxSpawnGap = 20;
     this.nextSpawnX = 14;

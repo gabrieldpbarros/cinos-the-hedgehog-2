@@ -7,6 +7,7 @@ const canvas = document.getElementById('canvas');
 const hudDistance = document.getElementById('hud-distance');
 const hudSpeed = document.getElementById('hud-speed');
 const hudRings = document.getElementById('hud-rings');
+const hudTime = document.getElementById('hud-time');
 const overlay = document.getElementById('overlay');
 
 const input = new Input();
@@ -55,7 +56,7 @@ function renderControls() {
 function renderPause(distance) {
   return `
     <section class="overlay-panel" role="dialog" aria-modal="true" aria-labelledby="overlay-title">
-      <p class="eyebrow">Pausa · ${distance} m</p>
+      <p class="eyebrow">Pausa · ${distance} m · ${formatTime(game.getElapsedTime())}</p>
       <h1 class="panel-title" id="overlay-title">Corrida pausada</h1>
       <p class="panel-subtitle">Respire, ajuste a rota e volte quando quiser. Os controles também estão logo abaixo.</p>
 
@@ -87,6 +88,10 @@ function renderLose(distance) {
         <div class="result-card">
           <span>Distância</span>
           <strong>${distance} m</strong>
+        </div>
+        <div class="result-card">
+          <span>Tempo</span>
+          <strong>${formatTime(game.getElapsedTime())}</strong>
         </div>
         <div class="result-card">
           <span>Anéis</span>
@@ -151,6 +156,7 @@ function updateHud(distance, speed) {
   hudDistance.textContent = distance;
   hudSpeed.textContent = speed;
   hudRings.textContent = game.level?.ringBalance ?? 0;
+  hudTime.textContent = formatTime(game.getElapsedTime());
 }
 
 function updateOverlay(distance) {

@@ -51,6 +51,7 @@ function makeHazard(level, kind, x, y) {
 test('spawnAhead chooses enemies/obstacles at deterministic gaps and stops at the finish', async () => {
   const level = makeLevel();
   level.spawnHazards = true;
+  level.spawnAheadDistance = 45;
   level.terrain.getHeightAt = () => 2;
   level.nextSpawnX = 14;
   const rolls = [0, 0.5, 0.5, 0.5, 0.9, 0.5];
