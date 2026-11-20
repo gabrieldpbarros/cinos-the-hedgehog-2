@@ -4,7 +4,7 @@ import { Level } from '../src/game/Level.js';
 import { Terrain } from '../src/game/logic/terrain/Terrain.js';
 
 test('every enemy updates, and those behind the first chunk are removed', () => {
-  const level = new Level(null);
+  const level = new Level(null, 1000, { spawnHazards: false });
   level.terrain = new Terrain(0);
   level.sonic = { logic: { setMinX() {}, getPosition: () => ({ x: 200 }), checkCollision: () => false } };
   level.player = { updateEntity() {} };

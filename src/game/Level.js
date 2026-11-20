@@ -3,8 +3,10 @@ import { StaticController } from "./logic/controllers/StaticController.js";
 import { Terrain } from "./logic/terrain/Terrain.js";
 import { Sonic } from "./logic/entities/Sonic.js";
 import { BuzzBomber } from "./logic/entities/BuzzBomber.js";
+import { Obstacle } from "./logic/entities/Obstacle.js";
 import { createSonicModel } from "./rendering/entities/SonicModel.js";
 import { createBuzzBomberModel } from "./rendering/entities/BuzzBomberModel.js";
+import { createObstacleModel } from "./rendering/entities/ObstacleModel.js";
 import { Entity } from "./entities/Entity.js";
 import { Ring, RING } from './logic/entities/Ring.js';
 import { RingModel, loadRingTemplate } from './rendering/entities/RingModel.js';
@@ -25,9 +27,9 @@ async function makeSonic(groundAt) {
   );
 }
 
-async function makeBuzzBomber() {
+async function makeBuzzBomber(x = 5, y = 3) {
   const buzzBomberLogic = new BuzzBomber(
-    5, 3, 0,
+    x, y, 0,
     'enemy',
     false,
   );
@@ -42,8 +44,19 @@ async function makeBuzzBomber() {
   return buzzBomber;
 }
 
+function makeObstacle(x, groundY) {
+  const obstacle = new Entity(
+    new Obstacle(x, groundY, 0),
+    createObstacleModel(),
+  );
+  const { length, heigth, depth } = obstacle.logic.hitboxDim;
+  obstacle.setHitbox(length * 0.85, heigth * 0.85, depth * 0.85);
+  obstacle.setOnGround(groundY);
+  return obstacle;
+}
+
 export class Level {
-  constructor(mainInput, finishDistance = 1000) {
+  constructor(mainInput, finishDistance = 1000, options = {}) {
     this.mainInput = mainInput;
     this.finishDistance = finishDistance;
     this.finishX = null;
@@ -53,6 +66,16 @@ export class Level {
     this.ringLayouts = new Map();
     this.hitboxesVisible = false;
     this.scatterSequence = 0;
+
+    this.random = options.random ?? Math.random;
+    this.spawnHazards = options.spawnHazards ?? true;
+    this.spawnAheadDistance = 45;
+    this.minSpawnGap = 10;
+    this.maxSpawnGap = 20;
+    this.nextSpawnX = 14;
+    this.spawnedEntities = [];
+    this.spawnPromise = null;
+    this.obstacles = [];
   }
 
   async buildLevel() {
@@ -74,14 +97,13 @@ export class Level {
 
     this.entities.push(this.sonic);
     this.enemies = [this.buzzBomber];
-    for (const enemy of this.enemies) {
-      enemy.controller = new StaticController(enemy);
-      this.entities.push(enemy);
-    }
-
+    this.obstacles = [];
+    this.spawnedEntities = [];
     this.sonic.setOnGround(this.startPosY);
     for (const enemy of this.enemies) {
+      enemy.controller = new StaticController(enemy);
       enemy.setOnGround(this.terrain.getHeightAt(enemy.logic.getPosition().x) + 0.5);
+      this.entities.push(enemy);
     }
 
     // controllers
@@ -89,6 +111,11 @@ export class Level {
     this.ringTemplate = await loadRingTemplate();
     this.ringAudio = new RingAudio();
     this.syncRingChunks();
+    if (this.spawnHazards) {
+      await this.spawnAhead(this.startPosX);
+      // O jogo desenha todas as entidades ao iniciar; só as futuras viram "added".
+      this.spawnedEntities = [];
+    }
   }
 
   syncRingChunks() {
@@ -168,47 +195,128 @@ export class Level {
     return { added, removed };
   }
 
-  resolveEnemyContact() {
+  spawnAhead(playerX) {
+    if (!this.spawnHazards || this.finishX === null) return Promise.resolve();
+    if (this.spawnPromise) return this.spawnPromise;
+    this.spawnPromise = this.fillAhead(playerX)
+      .catch((error) => {
+        // Uma falha de carregamento não pode interromper a corrida.
+        console.error('Falha ao gerar inimigo ou obstáculo:', error);
+      })
+      .finally(() => {
+        this.spawnPromise = null;
+      });
+    return this.spawnPromise;
+  }
+
+  async fillAhead(playerX) {
+    const maxX = Math.min(playerX + this.spawnAheadDistance, this.finishX);
+    while (this.nextSpawnX < maxX) {
+      const x = this.nextSpawnX;
+      const groundY = this.terrain.getHeightAt(x);
+      if (groundY !== null) {
+        const roll = this.random();
+        if (roll < 0.45) {
+          await this.spawnEnemy(x, groundY);
+        } else if (roll < 0.85) {
+          this.spawnObstacle(x, groundY);
+        }
+      }
+      this.nextSpawnX += this.minSpawnGap +
+        this.random() * (this.maxSpawnGap - this.minSpawnGap);
+    }
+  }
+
+  async spawnEnemy(x, groundY) {
+    const flyHeight = groundY + 0.8 + this.random() * 2.4;
+    const enemy = await makeBuzzBomber(x, flyHeight);
+    enemy.controller = new StaticController(enemy);
+    enemy.setOnGround(flyHeight);
+    this.enemies.push(enemy);
+    this.entities.push(enemy);
+    this.spawnedEntities.push(enemy);
+  }
+
+  spawnObstacle(x, groundY) {
+    const obstacle = makeObstacle(x, groundY);
+    obstacle.controller = new StaticController(obstacle);
+    this.obstacles.push(obstacle);
+    this.entities.push(obstacle);
+    this.spawnedEntities.push(obstacle);
+  }
+
+  removeHazard(entity) {
+    this.enemies = this.enemies.filter((enemy) => enemy !== entity);
+    this.obstacles = this.obstacles.filter((obstacle) => obstacle !== entity);
+    this.entities = this.entities.filter((item) => item !== entity);
+  }
+
+  resolveHazardContact() {
     if (this.sonic.logic.invulnerabilityRemaining > 0) return { added: [], removed: [] };
-    for (const enemy of this.enemies) {
+    for (const enemy of [...this.enemies]) {
       if (!this.sonic.logic.checkCollision(enemy.logic)) continue;
-      if (this.ringBalance === 0) return { defeated: true, added: [], removed: [] };
-      const previousBalance = this.ringBalance;
-      this.ringBalance = 0;
-      this.sonic.logic.takeHit(enemy.logic.getPosition().x);
-      this.sonic.model.update(0, this.sonic.logic);
-      return this.scatterRings(previousBalance);
+      if (this.sonic.logic.isSpinning()) {
+        // Pular/girar sobre o inimigo o derrota e dá um pequeno impulso.
+        this.sonic.logic.speed.y = Math.abs(this.sonic.logic.jumpSpeed) * 0.65;
+        this.removeHazard(enemy);
+        return { added: [], removed: [enemy] };
+      }
+      return this.damageOrLose(enemy);
+    }
+    for (const obstacle of [...this.obstacles]) {
+      if (!this.sonic.logic.checkCollision(obstacle.logic)) continue;
+      return this.damageOrLose(obstacle);
     }
     return { added: [], removed: [] };
+  }
+
+  damageOrLose(hazard) {
+    if (this.ringBalance === 0) return { defeated: true, added: [], removed: [] };
+    const previousBalance = this.ringBalance;
+    this.ringBalance = 0;
+    this.sonic.logic.takeHit(hazard.logic.getPosition().x);
+    this.sonic.model.update(0, this.sonic.logic);
+    return this.scatterRings(previousBalance);
   }
 
   update(dt) {
     this.sonic.logic.setMinX(this.terrain.chunks[0].initialX);
     this.player.updateEntity(dt);
     for (const enemy of this.enemies) enemy.controller.updateEntity(dt);
+    for (const obstacle of this.obstacles) obstacle.controller.updateEntity(dt);
 
-    const chunks = this.terrain.update(this.sonic.logic.getPosition().x);
+    const playerX = this.sonic.logic.getPosition().x;
+    const chunks = this.terrain.update(playerX);
+    this.spawnAhead(playerX);
     const ringChanges = this.syncRingChunks();
     for (const ring of this.rings) ring.update(dt);
     const finished = this.rings.filter((ring) => ring.logic.finished);
     this.removeRings(finished);
     this.collectRings();
+
     const minX = this.terrain.chunks[0].initialX;
     const removed = [...ringChanges.removed, ...finished];
-    this.enemies = this.enemies.filter((enemy) => {
-      if (enemy.logic.getPosition().x >= minX) return true;
+    for (const enemy of [...this.enemies]) {
+      if (enemy.logic.getPosition().x >= minX) continue;
+      this.removeHazard(enemy);
       removed.push(enemy);
-      return false;
-    });
-    if (removed.length > 0) {
-      const gone = new Set(removed);
-      this.entities = this.entities.filter((entity) => !gone.has(entity));
     }
-    const impact = this.resolveEnemyContact();
+    for (const obstacle of [...this.obstacles]) {
+      if (obstacle.logic.getPosition().x >= minX) continue;
+      this.removeHazard(obstacle);
+      removed.push(obstacle);
+    }
+
+    const impact = this.resolveHazardContact();
+    const added = [...ringChanges.added, ...impact.added];
+    if (this.spawnedEntities.length > 0) {
+      added.push(...this.spawnedEntities);
+      this.spawnedEntities = [];
+    }
     return {
       chunks,
       removed: [...removed, ...impact.removed],
-      added: [...ringChanges.added, ...impact.added],
+      added,
       defeated: impact.defeated ?? false,
     };
   }

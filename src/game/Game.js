@@ -16,6 +16,7 @@ export class Game {
     this.scene = new SceneView(this.canvas);
     this.level.sonic.update(0);
     for (const enemy of this.level.enemies) enemy.update(0);
+    for (const obstacle of this.level.obstacles) obstacle.update(0);
     this.scene.drawChunks(this.level.terrain.chunks);
     for (const entity of this.level.entities) this.scene.drawEntity(entity);
     this.syncScene();
