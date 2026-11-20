@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import * as THREE from 'three';
-import { SonicModel } from '../src/game/rendering/entities/SonicModel.js';
+import { SonicModel, gaitWeights } from '../src/game/rendering/entities/SonicModel.js';
 import poseClips from '../src/game/rendering/entities/sonicPoseClips.js';
 
 const makeClips = () => ['Idle', 'Walk', 'Jog', 'Run', 'Spin', 'Brake', 'Crouch', 'LookUp'].map(
@@ -38,35 +38,34 @@ test('Sonic animation follows jump and absolute horizontal speed', () => {
 
   model.update(0.05, logic);
   assert.equal(currentClip(), 'Idle');
+  const weight = (name) => model.actions.get(name).getEffectiveWeight();
+
+  // Top speed: Run only, legs matched to the ground (3.5 u/s at 1x).
   logic.speed.x = -20;
-  model.update(0.05, logic);
-  assert.equal(currentClip(), 'Jog');
-  const rate = (speed) => Math.min(3.5, 0.5 + Math.abs(speed) * 0.09);
-  assert.ok(Math.abs(model.activeAction.timeScale - rate(20)) < 1e-9);
-  logic.speed.x = -3;
-  model.update(0.05, logic);
-  assert.equal(currentClip(), 'Walk');
-  assert.ok(Math.abs(model.activeAction.timeScale - rate(3)) < 1e-9);
-  const walkAction = model.activeAction;
+  for (let i = 0; i < 4; i++) model.update(0.05, logic);
+  assert.equal(currentClip(), 'Run');
+  assert.ok(Math.abs(weight('Run') - 1) < 1e-9);
+  assert.ok(Math.abs(model.activeAction.timeScale - 20 / 3.5) < 1e-9);
+
+  // Walking: rate = speed / foot speed (5 u/s at 1x), so the planted foot does not slide.
   logic.speed.x = 3;
+  for (let i = 0; i < 4; i++) model.update(0.05, logic);
+  assert.equal(currentClip(), 'Walk');
+  assert.ok(Math.abs(model.activeAction.timeScale - 3 / 5) < 1e-9);
+
+  // Between 5 and 9 u/s Walk and Jog play together, in the same normalized phase.
+  logic.speed.x = 7;
   model.update(0.05, logic);
-  assert.equal(model.activeAction, walkAction);
-  logic.speed.x = 8;
-  model.update(0.05, logic);
-  assert.equal(currentClip(), 'Jog');
-  assert.ok(Math.abs(model.activeAction.timeScale - rate(8)) < 1e-9);
-  logic.speed.x = 19.99;
-  model.update(0.05, logic);
-  const jogRate = model.activeAction.timeScale;
-  logic.speed.x = 20;
-  model.update(0.05, logic);
-  assert.equal(currentClip(), 'Jog');
-  assert.ok(Math.abs(model.activeAction.timeScale - jogRate) < 0.01);
+  assert.ok(Math.abs(weight('Walk') - 0.5) < 1e-9);
+  assert.ok(Math.abs(weight('Jog') - 0.5) < 1e-9);
+  const phase = (name) => model.actions.get(name).time / model.clips.get(name).duration;
+  assert.ok(Math.abs(phase('Walk') - phase('Jog')) < 1e-9);
+  assert.equal(model.actions.get('Walk').timeScale, model.actions.get('Jog').timeScale);
+
   logic.speed.x = 25;
   logic.currentActions.add('BOOST');
   model.update(0.05, logic);
-  assert.equal(currentClip(), 'Jog');
-  assert.ok(Math.abs(model.activeAction.timeScale - rate(25)) < 1e-9);
+  assert.equal(currentClip(), 'Run');
   logic.braking = true;
   model.update(0.05, logic);
   assert.equal(currentClip(), 'Brake');
@@ -97,6 +96,37 @@ test('Sonic animation follows jump and absolute horizontal speed', () => {
   assert.equal(currentClip(), 'Idle');
   model.update(0.2, logic);
   assert.ok(Math.abs(model.model.position.y - baseY) < 1e-9);
+});
+
+test('gait weights blend smoothly from walk to jog to run and always sum to 1', () => {
+  let previous = gaitWeights(0);
+  assert.deepEqual(previous, { Walk: 1, Jog: 0, Run: 0 });
+  for (let speed = 0.25; speed <= 22; speed += 0.25) {
+    const weights = gaitWeights(speed);
+    assert.ok(Math.abs(weights.Walk + weights.Jog + weights.Run - 1) < 1e-9);
+    for (const name of ['Walk', 'Jog', 'Run']) {
+      assert.ok(Math.abs(weights[name] - previous[name]) < 0.1, `${name} changes gradually at ${speed}`);
+    }
+    previous = weights;
+  }
+  assert.deepEqual(gaitWeights(11), { Walk: 0, Jog: 1, Run: 0 });
+  assert.equal(gaitWeights(20).Run, 1);
+});
+
+test('state changes crossfade without ever dropping to the rest pose', () => {
+  const scene = new THREE.Group();
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshStandardMaterial()));
+  const model = new SonicModel(scene, makeClips());
+  const logic = makeLogic();
+  const total = () => [...model.actions.values()].reduce((sum, a) => sum + a.getEffectiveWeight(), 0);
+
+  model.update(0.05, logic);
+  for (const [speedX, braking] of [[4, false], [12, true], [12, false], [0, false], [6, false]]) {
+    logic.speed.x = speedX;
+    logic.braking = braking;
+    model.update(0.04, logic);
+    assert.ok(Math.abs(total() - 1) < 1e-9, `weights sum to 1 after ${speedX} u/s`);
+  }
 });
 
 test('crouch and look up play their baked pose clips only while stopped', () => {
