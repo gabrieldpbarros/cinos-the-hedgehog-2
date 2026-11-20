@@ -78,9 +78,26 @@ test('collection precedes damage in the same update, one impact consumes balance
   assert.equal(level.sonic.logic.invulnerabilityRemaining, 2);
   const game = new Game(null, null);
   game.level = level;
-  game.elapsedTime = 6;
+  game.elapsedTime = 1; // 1 anel em 1 s = 60 por minuto, o mínimo para A
   assert.equal(game.getResults().rings, 1);
   assert.equal(game.getResults().grade, 'A');
+});
+
+test('grade follows rings per minute: A 60, B 50, C 40, D 25, E 15, otherwise F', () => {
+  const game = new Game(null, null);
+  game.elapsedTime = 60;
+  const gradeFor = (rings) => {
+    game.level = { ringsCollected: rings };
+    return game.getResults().grade;
+  };
+  for (const [rings, grade] of [
+    [60, 'A'], [59, 'B'], [50, 'B'], [49, 'C'], [40, 'C'], [39, 'D'],
+    [25, 'D'], [24, 'E'], [15, 'E'], [14, 'F'], [9, 'F'], [0, 'F'],
+  ]) {
+    assert.equal(gradeFor(rings), grade, `${rings} rings in a minute`);
+  }
+  game.elapsedTime = 0;
+  assert.equal(gradeFor(5), 'F', 'no time elapsed yet');
 });
 
 test('zero balance loses, protected contact survives, and invulnerability ignores all common contact', () => {

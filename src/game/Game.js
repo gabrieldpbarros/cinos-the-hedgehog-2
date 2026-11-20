@@ -61,11 +61,12 @@ export class Game {
     const time = this.elapsedTime;
     const ringsPerMinute = time > 0 ? rings / (time / 60) : 0;
     let grade = 'F';
-    if (ringsPerMinute >= 10) grade = 'A';
-    else if (ringsPerMinute >= 8) grade = 'B';
-    else if (ringsPerMinute >= 6) grade = 'C';
-    else if (ringsPerMinute >= 4) grade = 'D';
-    else if (ringsPerMinute >= 2) grade = 'E';
+    if (ringsPerMinute >= 60) grade = 'A';
+    else if (ringsPerMinute >= 50) grade = 'B';
+    else if (ringsPerMinute >= 40) grade = 'C';
+    else if (ringsPerMinute >= 25) grade = 'D';
+    else if (ringsPerMinute >= 15) grade = 'E';
+    else if (ringsPerMinute >= 9) grade = 'F';
 
     return { rings, time, grade, ringsPerMinute };
   }
