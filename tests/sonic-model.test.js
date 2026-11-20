@@ -1,24 +1,38 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import * as THREE from 'three';
 import { SonicModel } from '../src/game/rendering/entities/SonicModel.js';
+import poseClips from '../src/game/rendering/entities/sonicPoseClips.js';
 
-test('Sonic animation follows jump and absolute horizontal speed', () => {
-  const scene = new THREE.Group();
-  scene.add(new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshStandardMaterial()));
-  const clips = ['Idle', 'Walk', 'Jog', 'Run', 'Spin', 'Brake'].map(
-    (name) => new THREE.AnimationClip(name, 1, []),
-  );
-  const model = new SonicModel(scene, clips);
-  const logic = {
+const makeClips = () => ['Idle', 'Walk', 'Jog', 'Run', 'Spin', 'Brake', 'Crouch', 'LookUp'].map(
+  (name) => new THREE.AnimationClip(name, 1, []),
+);
+
+// Lógica falsa com a mesma interface que o SonicModel consulta em Sonic.
+function makeLogic(actions = [], speedX = 0) {
+  return {
     onGround: true,
-    speed: { x: 0, y: 0 },
-    currentActions: new Set(),
+    speed: { x: speedX, y: 0 },
+    currentActions: new Set(actions),
     braking: false,
     getSpeed() { return this.speed; },
     isSpinning() { return !this.onGround || this.currentActions.has('JUMP'); },
     isBraking() { return this.braking; },
+    isCrouching() { return this.onGround && this.currentActions.has('CROUCH') && Math.abs(this.speed.x) < 0.01; },
+    isLookingUp() {
+      return this.onGround && this.currentActions.has('LOOK_UP') && !this.currentActions.has('CROUCH') &&
+        Math.abs(this.speed.x) < 0.01;
+    },
   };
+}
+
+test('Sonic animation follows jump and absolute horizontal speed', () => {
+  const scene = new THREE.Group();
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshStandardMaterial()));
+  const clips = makeClips();
+  const model = new SonicModel(scene, clips);
+  const logic = makeLogic();
   const currentClip = () => model.activeAction.getClip().name;
   const baseY = model.model.position.y;
 
@@ -85,33 +99,47 @@ test('Sonic animation follows jump and absolute horizontal speed', () => {
   assert.ok(Math.abs(model.model.position.y - baseY) < 1e-9);
 });
 
-test('holding crouch lowers and compresses the model without a dedicated clip', () => {
+test('crouch and look up play their baked pose clips only while stopped', () => {
   const scene = new THREE.Group();
   scene.add(new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshStandardMaterial()));
-  const clips = ['Idle', 'Walk', 'Jog', 'Run', 'Spin', 'Brake'].map(
-    (name) => new THREE.AnimationClip(name, 1, []),
-  );
-  const model = new SonicModel(scene, clips);
-  const logic = {
-    onGround: true,
-    speed: { x: 0, y: 0 },
-    currentActions: new Set(['CROUCH']),
-    getSpeed() { return this.speed; },
-    isSpinning() { return !this.onGround || this.currentActions.has('JUMP'); },
-    isBraking() { return false; },
-  };
-  const baseY = model.model.position.y;
-  const baseScaleY = model.baseScaleY;
+  const model = new SonicModel(scene, makeClips());
+  const logic = makeLogic(['CROUCH']);
+  const baseScale = model.model.scale.clone();
+  const currentClip = () => model.activeAction.getClip().name;
 
-  for (let i = 0; i < 20; i++) model.update(0.05, logic);
-  assert.equal(model.activeAction.getClip().name, 'Idle');
-  assert.ok(model.model.scale.y < baseScaleY);
-  assert.ok(model.model.position.y < baseY);
+  model.update(0.05, logic);
+  assert.equal(currentClip(), 'Crouch');
+  assert.ok(model.model.scale.equals(baseScale));
 
+  logic.currentActions.add('LOOK_UP');
+  model.update(0.05, logic);
+  assert.equal(currentClip(), 'Crouch', 'crouch wins when both are held');
   logic.currentActions.delete('CROUCH');
-  for (let i = 0; i < 20; i++) model.update(0.05, logic);
-  assert.ok(Math.abs(model.model.scale.y - baseScaleY) < 1e-9);
-  assert.ok(Math.abs(model.model.position.y - baseY) < 1e-9);
+  model.update(0.05, logic);
+  assert.equal(currentClip(), 'LookUp');
+
+  logic.speed.x = 5;
+  model.update(0.05, logic);
+  assert.equal(currentClip(), 'Walk', 'still braking: no pose yet');
+});
+
+test('baked pose clips lower the hips for Crouch and tilt the head back for LookUp', () => {
+  const clips = poseClips.map((data) => THREE.AnimationClip.parse(data));
+  assert.deepEqual(clips.map((clip) => clip.name), ['Crouch', 'LookUp']);
+  const [crouch, lookUp] = clips;
+  assert.notEqual(crouch.uuid, lookUp.uuid);
+
+  const gltf = JSON.parse(readFileSync(new URL(
+    '../public/model-imports/sonic_lost_world_sonic_model_animator_fan/scene.gltf', import.meta.url,
+  ), 'utf8'));
+  const restHipsY = gltf.nodes.find((node) => node.name === 'hips_98').translation[1];
+  const hipsY = (clip) => clip.tracks.find((track) => track.name === 'hips_98.position')?.values[1] ?? restHipsY;
+  assert.ok(hipsY(crouch) < restHipsY * 0.8);
+  assert.ok(Math.abs(hipsY(lookUp) - restHipsY) < restHipsY * 0.05);
+  for (const clip of clips) {
+    assert.ok(clip.tracks.some((track) => track.name === 'head_94.quaternion'), `${clip.name} poses the head`);
+    assert.ok(clip.tracks.some((track) => track.name === 'handL_32.quaternion'), `${clip.name} poses the hands`);
+  }
 });
 
 test('Sonic turns with horizontal movement without shifting its visual center', () => {
@@ -119,20 +147,11 @@ test('Sonic turns with horizontal movement without shifting its visual center', 
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshStandardMaterial());
   mesh.position.set(0.2, 0, 0.3);
   scene.add(mesh);
-  const clips = ['Idle', 'Walk', 'Jog', 'Run', 'Spin', 'Brake'].map(
-    (name) => new THREE.AnimationClip(name, 1, []),
-  );
+  const clips = makeClips();
   const model = new SonicModel(scene, clips);
   const { centerPos } = model.getObjectDim();
   model.setVisualOffset(-centerPos.x, -centerPos.y, -centerPos.z);
-  const logic = {
-    onGround: true,
-    speed: { x: -2, y: 0 },
-    currentActions: new Set(),
-    getSpeed() { return this.speed; },
-    isSpinning() { return !this.onGround || this.currentActions.has('JUMP'); },
-    isBraking() { return false; },
-  };
+  const logic = makeLogic([], -2);
   const center = () => new THREE.Box3().setFromObject(model.getObject3D()).getCenter(new THREE.Vector3());
   const originalCenter = center();
 

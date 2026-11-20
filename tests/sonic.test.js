@@ -65,13 +65,36 @@ test('movement input reaches 20 u/s without cutting off existing momentum', () =
   assert.equal(sonic.getSpeed().x, -20);
 });
 
-test('crouch caps horizontal speed at half the normal running limit', () => {
+test('holding crouch or look up on the ground ignores movement until Sonic stops', () => {
+  for (const action of ['CROUCH', 'LOOK_UP']) {
+    const sonic = makeSonic();
+    sonic.onGround = true;
+    sonic.do(action);
+    sonic.do('MOVE_RIGHT');
+    sonic.updateHorizontalSpeed(0.05);
+    assert.equal(sonic.getSpeed().x, 0, `${action} blocks walking`);
+    assert.equal(action === 'CROUCH' ? sonic.isCrouching() : sonic.isLookingUp(), true);
+
+    sonic.setSpeed(10, 0, 0);
+    assert.equal(sonic.isCrouching() || sonic.isLookingUp(), false, 'no pose while still moving');
+    for (let i = 0; i < 100 && sonic.getSpeed().x > 0; i++) sonic.updateHorizontalSpeed(0.05);
+    assert.equal(sonic.getSpeed().x, 0, `${action} brakes to a stop`);
+  }
+});
+
+test('crouch wins over look up and neither applies in the air', () => {
   const sonic = makeSonic();
-  sonic.setSpeed(20, 0, 0);
+  sonic.onGround = true;
   sonic.do('CROUCH');
+  sonic.do('LOOK_UP');
+  assert.equal(sonic.isCrouching(), true);
+  assert.equal(sonic.isLookingUp(), false);
+
+  sonic.onGround = false;
   sonic.do('MOVE_RIGHT');
   sonic.updateHorizontalSpeed(0.05);
-  assert.equal(sonic.getSpeed().x, 10);
+  assert.ok(sonic.getSpeed().x > 0, 'air control still works');
+  assert.equal(sonic.isCrouching(), false);
 });
 
 test('opposite input above 7 u/s keeps braking animation until Sonic stops', () => {

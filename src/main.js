@@ -29,7 +29,11 @@ function renderControls() {
     </div>
     <div class="control">
       <span>Agachar</span>
-      <span class="keys"><kbd>Ctrl</kbd></span>
+      <span class="keys"><kbd>S</kbd><em>ou</em><kbd class="arrow">↓</kbd></span>
+    </div>
+    <div class="control">
+      <span>Olhar para cima</span>
+      <span class="keys"><kbd>W</kbd><em>ou</em><kbd class="arrow">↑</kbd></span>
     </div>
     <div class="control">
       <span>Câmera</span>

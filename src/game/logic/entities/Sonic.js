@@ -2,6 +2,8 @@ import { CONFIG } from "../../constants.js";
 import { EntityLogic } from "./EntityLogic.js";
 
 const SPIN_HITBOX_HEIGHT_SCALE = 0.6;
+// Abaixo disso o Sonic está parado e pode agachar ou olhar para cima.
+const STILL_SPEED = 0.01;
 
 export class Sonic extends EntityLogic {
   constructor(...args) {
@@ -25,6 +27,22 @@ export class Sonic extends EntityLogic {
 
   isBraking() {
     return this.brakeAnimationDirection !== 0;
+  }
+
+  // Segurar S ou W no chão trava o movimento; a pose só começa quando ele para.
+  holdsStill() {
+    return this.onGround &&
+      (this.currentActions.has("CROUCH") || this.currentActions.has("LOOK_UP"));
+  }
+
+  isCrouching() {
+    return this.holdsStill() && !this.isSpinning() && this.currentActions.has("CROUCH") &&
+      Math.abs(this.speed.x) < STILL_SPEED;
+  }
+
+  isLookingUp() {
+    return this.holdsStill() && !this.isSpinning() && !this.currentActions.has("CROUCH") &&
+      Math.abs(this.speed.x) < STILL_SPEED;
   }
 
   takeHit(enemyX) {
@@ -58,15 +76,13 @@ export class Sonic extends EntityLogic {
 
   updateHorizontalSpeed(dt) {
     if (this.recovering) return;
-    const direction = Number(this.currentActions.has("MOVE_RIGHT")) -
+    const direction = this.holdsStill() ? 0 : Number(this.currentActions.has("MOVE_RIGHT")) -
       Number(this.currentActions.has("MOVE_LEFT"));
     if (this.onGround && !this.brakeAnimationDirection &&
         Math.abs(this.speed.x) > 7 && direction * this.speed.x < 0) {
       this.brakeAnimationDirection = Math.sign(this.speed.x);
     }
-    const speedLimit = this.currentActions.has("CROUCH")
-      ? CONFIG.runSpeedLimit / 2
-      : CONFIG.runSpeedLimit;
+    const speedLimit = CONFIG.runSpeedLimit;
 
     if (this.speed.x === 0 || direction * this.speed.x > 0) {
       this.brakeStartSpeed = 0;
@@ -107,10 +123,6 @@ export class Sonic extends EntityLogic {
       this.speed.x = direction > 0
         ? Math.min(nextSpeed, speedLimit)
         : Math.max(nextSpeed, -speedLimit);
-    }
-
-    if (this.currentActions.has("CROUCH")) {
-      this.speed.x = Math.max(-speedLimit, Math.min(speedLimit, this.speed.x));
     }
 
     // Em repouso, o atrito estático impede a rampa de iniciar o deslizamento.

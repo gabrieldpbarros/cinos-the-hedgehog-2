@@ -18,7 +18,7 @@ https://gabrieldpbarros.github.io/cinos-the-hedgehog-2/
 
 O projeto é um jogo 3D de corrida com câmera em perspectiva, terreno procedural, Sonic animado em GLB, BuzzBombers, anéis e obstáculos.
 
-- Movimento acelerado, frenagem, salto, giro, agachamento com pose visual e duas câmeras.
+- Movimento acelerado, frenagem, salto, giro, agachar e olhar para cima (parado) e duas câmeras.
 - Coleta de anéis com HUD, saldo, espalhamento, recoleta e invulnerabilidade.
 - Inimigos que podem ser derrotados ao pular/girar e espinhos que causam dano.
 - Perda de anéis ao encostar em um perigo; sem saldo, a corrida termina.
@@ -35,7 +35,8 @@ O projeto é um jogo 3D de corrida com câmera em perspectiva, terreno procedura
 | --- | --- |
 | Mover para a esquerda/direita | `A` / `D` ou `←` / `→` |
 | Pular e girar | `Espaço` |
-| Agachar (pose visual) e reduzir a velocidade | `Ctrl` esquerdo/direito |
+| Agachar (trava o movimento; a pose começa quando o Sonic para) | `S` ou `↓` |
+| Olhar para cima (trava o movimento da mesma forma) | `W` ou `↑` |
 | Trocar de câmera | `C` |
 | Pausar/continuar | `P` ou `Esc` |
 | Reiniciar na pausa | `R` |
