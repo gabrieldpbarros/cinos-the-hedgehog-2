@@ -10,7 +10,6 @@ import { createObstacleModel } from "./rendering/entities/ObstacleModel.js";
 import { Entity } from "./entities/Entity.js";
 import { Ring, RING } from './logic/entities/Ring.js';
 import { RingModel, loadRingTemplate } from './rendering/entities/RingModel.js';
-import { RingAudio } from './rendering/RingAudio.js';
 
 async function makeSonic(groundAt) {
   const sonicLogic = new Sonic(
@@ -68,14 +67,36 @@ export class Level {
     this.scatterSequence = 0;
 
     this.random = options.random ?? Math.random;
+    this.audio = options.audio ?? null;
     this.spawnHazards = options.spawnHazards ?? true;
-    this.spawnAheadDistance = 45;
+    // Maior que a área visível da segunda câmera; evita hazards "nascendo" na tela.
+    this.spawnAheadDistance = 140;
     this.minSpawnGap = 10;
     this.maxSpawnGap = 20;
     this.nextSpawnX = 14;
     this.spawnedEntities = [];
     this.spawnPromise = null;
+    this.enemies = [];
     this.obstacles = [];
+  }
+
+  overlapsHazard(x, y, width, height) {
+    return [...this.enemies, ...this.obstacles].some(({ logic }) => {
+      const position = logic.getPosition();
+      const hitbox = logic.hitboxDim;
+      return Math.abs(x - position.x) < (width + hitbox.length) / 2 &&
+        Math.abs(y - position.y) < (height + hitbox.heigth) / 2;
+    });
+  }
+
+  overlapsStaticRing(x, y, width, height) {
+    return this.rings.some(({ logic }) => {
+      if (!logic.active || logic.scattered) return false;
+      const position = logic.getPosition();
+      const hitbox = logic.hitboxDim;
+      return Math.abs(x - position.x) < (width + hitbox.length) / 2 &&
+        Math.abs(y - position.y) < (height + hitbox.heigth) / 2;
+    });
   }
 
   async buildLevel() {
@@ -109,7 +130,6 @@ export class Level {
     // controllers
     this.player = new PlayerController(this.sonic, this.mainInput);
     this.ringTemplate = await loadRingTemplate();
-    this.ringAudio = new RingAudio();
     this.syncRingChunks();
     if (this.spawnHazards) {
       await this.spawnAhead(this.startPosX);
@@ -138,6 +158,8 @@ export class Level {
         const x = chunk.initialX + offset;
         if (x < this.startPosX || x >= this.finishX) return;
         const y = chunk.getHeightAtX(x) + (index >= 6 ? 2.8 : 0.7);
+        // Não cria anel dentro de um inimigo ou espinho já existente.
+        if (this.overlapsHazard(x, y, RING.hitbox, RING.hitbox)) return;
         const logic = new Ring(x, y, `${chunk.initialX}:${index}`, chunk.initialX);
         const ring = new Entity(logic, new RingModel(this.ringTemplate));
         ring.setHitbox(RING.hitbox, RING.hitbox, RING.depth);
@@ -159,7 +181,7 @@ export class Level {
       this.ringsCollected++;
       this.ringLayouts.get(ring.logic.chunkX)?.add(ring.logic.id);
       ring.model.update(0, ring.logic);
-      this.ringAudio?.play();
+      this.audio?.play('ring');
     }
   }
 
@@ -232,6 +254,12 @@ export class Level {
     const enemy = await makeBuzzBomber(x, flyHeight);
     enemy.controller = new StaticController(enemy);
     enemy.setOnGround(flyHeight);
+    if (this.overlapsStaticRing(
+      enemy.logic.position.x,
+      enemy.logic.position.y,
+      enemy.logic.hitboxDim.length,
+      enemy.logic.hitboxDim.heigth,
+    )) return;
     this.enemies.push(enemy);
     this.entities.push(enemy);
     this.spawnedEntities.push(enemy);
@@ -240,6 +268,15 @@ export class Level {
   spawnObstacle(x, groundY) {
     const obstacle = makeObstacle(x, groundY);
     obstacle.controller = new StaticController(obstacle);
+    if (this.overlapsStaticRing(
+      obstacle.logic.position.x,
+      obstacle.logic.position.y,
+      obstacle.logic.hitboxDim.length,
+      obstacle.logic.hitboxDim.heigth,
+    )) {
+      obstacle.model.dispose?.();
+      return;
+    }
     this.obstacles.push(obstacle);
     this.entities.push(obstacle);
     this.spawnedEntities.push(obstacle);
@@ -258,6 +295,7 @@ export class Level {
       if (this.sonic.logic.isSpinning()) {
         // Pular/girar sobre o inimigo o derrota e dá um pequeno impulso.
         this.sonic.logic.speed.y = Math.abs(this.sonic.logic.jumpSpeed) * 0.65;
+        this.audio?.play('stomp');
         this.removeHazard(enemy);
         return { added: [], removed: [enemy] };
       }
@@ -272,6 +310,7 @@ export class Level {
 
   damageOrLose(hazard) {
     if (this.ringBalance === 0) return { defeated: true, added: [], removed: [] };
+    this.audio?.play('hit');
     const previousBalance = this.ringBalance;
     this.ringBalance = 0;
     this.sonic.logic.takeHit(hazard.logic.getPosition().x);
@@ -280,8 +319,16 @@ export class Level {
   }
 
   update(dt) {
-    this.sonic.logic.setMinX(this.terrain.chunks[0].initialX);
+    // O limite esquerdo é o penhasco no início do primeiro chunk; o corpo do Sonic encosta nele.
+    this.sonic.logic.setMinX(this.terrain.chunks[0].initialX + this.sonic.logic.hitboxDim.length / 2);
+    const wasOnGround = this.sonic.logic.onGround;
+    const wasBraking = this.sonic.logic.isBraking?.() ?? false;
     this.player.updateEntity(dt);
+    if (wasOnGround && !this.sonic.logic.onGround && this.sonic.logic.getSpeed().y > 0) {
+      this.audio?.play('jump');
+    }
+    if (!wasOnGround && this.sonic.logic.onGround) this.audio?.play('land');
+    if (!wasBraking && this.sonic.logic.isBraking?.()) this.audio?.play('brake');
     for (const enemy of this.enemies) enemy.controller.updateEntity(dt);
     for (const obstacle of this.obstacles) obstacle.controller.updateEntity(dt);
 

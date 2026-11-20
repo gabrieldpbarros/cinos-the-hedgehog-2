@@ -22,14 +22,28 @@ function pattern(colors, checker = false) {
 
 let sharedMaterials;
 
-function getMaterials() {
+// Materiais da pista, reaproveitados pelo penhasco do início e pelos platôs do fundo.
+// Quadrados da terra têm 4 unidades; faixas da grama, 1,45 (UV = distância / 2,9).
+// Cores saturadas no estilo arcade (sem chegar ao extremo dos jogos de 16 bits).
+export const TERRAIN_COLORS = {
+  soil: ['#ad642d', '#dd9a51'],
+  grass: ['#349040', '#53b64d'],
+  grassEdge: '#36923e',
+};
+export function getTerrainMaterials() {
   if (!sharedMaterials) {
-    sharedMaterials = [ // terra e grama, respectivamente
-      new THREE.MeshStandardMaterial({ map: pattern(['#a56832', '#d49a56'], true), side: THREE.DoubleSide }),
-      new THREE.MeshStandardMaterial({ map: pattern(['#3a7d44', '#58a84f']), side: THREE.DoubleSide }),
-    ];
+    sharedMaterials = {
+      soil: new THREE.MeshStandardMaterial({ map: pattern(TERRAIN_COLORS.soil, true), side: THREE.DoubleSide }),
+      grass: new THREE.MeshStandardMaterial({ map: pattern(TERRAIN_COLORS.grass), side: THREE.DoubleSide }),
+      grassEdge: new THREE.MeshStandardMaterial({ color: TERRAIN_COLORS.grassEdge, flatShading: true }),
+    };
   }
   return sharedMaterials;
+}
+
+function getMaterials() {
+  const { soil, grass } = getTerrainMaterials();
+  return [soil, grass]; // terra e grama, respectivamente
 }
 
 export class GreenHillChunkModel {

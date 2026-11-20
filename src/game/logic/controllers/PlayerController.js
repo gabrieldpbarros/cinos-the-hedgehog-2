@@ -6,7 +6,8 @@ export class PlayerController extends Controller {
     ["MOVE_RIGHT", ["KeyD", "ArrowRight"]],
     ["JUMP", ["Space"]],
     ["BOOST", ["ShiftLeft", "ShiftRight"]],
-    ["CROUCH", ["ControlLeft", "ControlRight"]],
+    ["CROUCH", ["KeyS", "ArrowDown"]],
+    ["LOOK_UP", ["KeyW", "ArrowUp"]],
   ]);
 
   constructor(entity, inputListener) {

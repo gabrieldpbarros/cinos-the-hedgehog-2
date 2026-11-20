@@ -1,5 +1,6 @@
 import { Level } from "./Level.js";
 import { SceneView } from "./rendering/SceneView.js";
+import { AudioManager } from "./rendering/audio/AudioManager.js";
 import { CONFIG } from "./constants.js";
 
 export class Game {
@@ -8,10 +9,11 @@ export class Game {
     this.state     = 'menu'; // menu | playing | paused | win | lose
     this.mainInput = input;
     this.elapsedTime = 0;
+    this.audio = new AudioManager();
   }
 
   async startGame() {
-    this.level  = new Level(this.mainInput, CONFIG.levelDistance);
+    this.level  = new Level(this.mainInput, CONFIG.levelDistance, { audio: this.audio });
     await this.level.buildLevel();
     this.scene = new SceneView(this.canvas);
     this.level.sonic.update(0);
@@ -21,12 +23,13 @@ export class Game {
     for (const entity of this.level.entities) this.scene.drawEntity(entity);
     this.syncScene();
     this.state  = 'playing';
+    this.audio?.startMusic();
   }
 
-  syncScene() {
+  syncScene(dt = 0) {
     const position = this.level.sonic.logic.getPosition();
     const terrainY = this.level.terrain.getHeightAt(position.x) ?? position.y;
-    this.scene.sync(position, terrainY);
+    this.scene.sync(position, terrainY, dt);
     this.scene.render();
   }
 
@@ -43,13 +46,19 @@ export class Game {
       this.finishLineDrawn = true;
     }
 
-    if (defeated) this.state = 'lose';
+    if (defeated) {
+      this.state = 'lose';
+      this.audio?.play('lose');
+      this.audio?.stopMusic();
+    }
 
     if (this.state === 'playing' &&
         this.level.sonic.logic.getPosition().x >= this.level.finishX) {
       this.state = 'win';
+      this.audio?.play('win');
+      this.audio?.stopMusic();
     }
-    this.syncScene();
+    this.syncScene(dt);
   }
 
   getElapsedTime() {
@@ -61,11 +70,12 @@ export class Game {
     const time = this.elapsedTime;
     const ringsPerMinute = time > 0 ? rings / (time / 60) : 0;
     let grade = 'F';
-    if (ringsPerMinute >= 10) grade = 'A';
-    else if (ringsPerMinute >= 8) grade = 'B';
-    else if (ringsPerMinute >= 6) grade = 'C';
-    else if (ringsPerMinute >= 4) grade = 'D';
-    else if (ringsPerMinute >= 2) grade = 'E';
+    if (ringsPerMinute >= 60) grade = 'A';
+    else if (ringsPerMinute >= 50) grade = 'B';
+    else if (ringsPerMinute >= 40) grade = 'C';
+    else if (ringsPerMinute >= 25) grade = 'D';
+    else if (ringsPerMinute >= 15) grade = 'E';
+    else if (ringsPerMinute >= 9) grade = 'F';
 
     return { rings, time, grade, ringsPerMinute };
   }
@@ -78,8 +88,10 @@ export class Game {
   togglePause() {
     if (this.state === 'playing') {
       this.state = 'paused';
+      this.audio?.play('pause');
     } else if (this.state === 'paused') {
       this.state = 'playing';
+      this.audio?.play('resume');
     }
   }
 
