@@ -5,6 +5,7 @@ import { PlayerController } from '../src/game/logic/controllers/PlayerController
 test('either movement key keeps its action active; Shift boosts and Ctrl crouches', () => {
   const actions = new Map();
   const entity = {
+    logic: {},
     handleAction: (action, active) => actions.set(action, active),
     update: () => {},
   };

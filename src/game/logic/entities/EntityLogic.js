@@ -76,6 +76,7 @@ export class EntityLogic {
   }
 
   checkCollision(otherEntity) {
+    if (this.hitboxActive === false || otherEntity.hitboxActive === false) return false;
     const from = this.previousPosition ?? this.position;
     return segmentHitsBox(from, this.position, this.hitboxDim, otherEntity);
   }

@@ -10,6 +10,8 @@ export class Sonic extends EntityLogic {
     this.brakeElapsed = 0;
     this.brakeScale = 1;
     this.brakeAnimationDirection = 0;
+    this.invulnerabilityRemaining = 0;
+    this.recovering = false;
   }
 
   setHitbox(length, height, depth) {
@@ -25,8 +27,27 @@ export class Sonic extends EntityLogic {
     return this.brakeAnimationDirection !== 0;
   }
 
+  takeHit(enemyX) {
+    const away = Math.sign(this.position.x - enemyX) || -Math.sign(this.speed.x) || -1;
+    this.clearActions();
+    this.brakeStartSpeed = 0;
+    this.brakeAnimationDirection = 0;
+    this.recovering = true;
+    this.onGround = false;
+    this.invulnerabilityRemaining = 2;
+    this.setSpeed(away * 4, 8, 0);
+  }
+
+  isDamageVisible() {
+    return this.invulnerabilityRemaining === 0 ||
+      Math.floor((2 - this.invulnerabilityRemaining + 1e-9) / (2 / 60)) % 2 === 0;
+  }
+
   update(dt) {
+    this.invulnerabilityRemaining = Math.max(0, this.invulnerabilityRemaining - dt);
+    if (this.invulnerabilityRemaining < 1e-9) this.invulnerabilityRemaining = 0;
     super.update(dt);
+    if (this.onGround) this.recovering = false;
     const height = this.isSpinning()
       ? this.standingHitboxHeight * SPIN_HITBOX_HEIGHT_SCALE
       : this.standingHitboxHeight;
@@ -36,6 +57,7 @@ export class Sonic extends EntityLogic {
   }
 
   updateHorizontalSpeed(dt) {
+    if (this.recovering) return;
     const direction = Number(this.currentActions.has("MOVE_RIGHT")) -
       Number(this.currentActions.has("MOVE_LEFT"));
     if (this.onGround && !this.brakeAnimationDirection &&

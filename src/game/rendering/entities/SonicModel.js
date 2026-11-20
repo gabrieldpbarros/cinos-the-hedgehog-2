@@ -55,6 +55,7 @@ export class SonicModel extends EntityModel {
   }
 
   update(dt, logic) {
+    this.model.visible = logic.isDamageVisible?.() ?? true;
     const speedX = logic.getSpeed().x;
     const speed = Math.abs(speedX);
     if (speed > 0.01 && (speedX < 0) !== this.facingLeft) {
