@@ -121,7 +121,9 @@ Os hazards são gerados até 140 unidades à frente do jogador. A distância é 
 
 ## Estado atual, testes e pontos de extensão
 
-`Game.state` percorre `menu`, `playing`, `paused`, `win` e `lose`. A vitória ocorre ao cruzar `finishX` (1000 m); a derrota ocorre quando o Sonic encosta em um perigo sem saldo de anéis. O menu de pausa congela a partida e mostra os controles e botões de continuar/reiniciar. As telas de vitória e derrota exibem distância, **tempo**, **anéis carregados / total coletado** e, na vitória, a nota. O cronômetro usa `Game.elapsedTime`, que só avança durante `playing`.
+`Game.state` percorre `menu`, `playing`, `paused`, `win` e `lose`. A vitória ocorre ao cruzar `finishX` (1000 m); a derrota ocorre quando o Sonic encosta em um perigo sem saldo de anéis. O menu de pausa congela a partida e mostra os controles, botões de continuar/reiniciar e mute de áudio. As telas de vitória e derrota exibem distância, **tempo**, **anéis carregados / total coletado** e, na vitória, a nota. O cronômetro usa `Game.elapsedTime`, que só avança durante `playing`.
+
+O áudio fica em `GameAudio`: efeitos e trilha chiptune são sintetizados com Web Audio, sem arquivos de terceiros. O mute do menu é persistido em `localStorage`; detalhes em [audio.md](audio.md).
 
 O HUD foi simplificado para distância, velocidade e anéis; o título do jogo não aparece durante a partida. A interface usa Bungee e Chakra Petch, registradas em [font-credits.md](font-credits.md), e os créditos de modelos ficam em [model-credits.md](model-credits.md).
 

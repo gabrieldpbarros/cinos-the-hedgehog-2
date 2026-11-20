@@ -54,10 +54,15 @@ function renderControls() {
     <div class="control">
       <span>Coletar anéis</span>
       <span class="keys"><em>encoste no anel</em></span>
+    </div>
+    <div class="control">
+      <span>Som</span>
+      <span class="keys"><kbd>M</kbd><em>na pausa</em></span>
     </div>`;
 }
 
 function renderPause(distance) {
+  const muted = game.audio?.muted ?? false;
   return `
     <section class="overlay-panel" role="dialog" aria-modal="true" aria-labelledby="overlay-title">
       <p class="eyebrow">Pausa · ${distance} m · ${formatTime(game.getElapsedTime())}</p>
@@ -73,6 +78,7 @@ function renderPause(distance) {
       <div class="panel-actions">
         <button class="btn btn-primary" type="button" data-action="resume">Continuar <kbd>P</kbd></button>
         <button class="btn btn-ghost" type="button" data-action="restart">Reiniciar <kbd>R</kbd></button>
+        <button class="btn btn-ghost" type="button" data-action="toggle-audio" aria-pressed="${muted}">${muted ? 'Som desligado' : 'Som ligado'} <kbd>M</kbd></button>
       </div>
 
       <p class="panel-footnote"><strong>Dica:</strong> pule sobre BuzzBombers para derrotá-los. Com anéis, um impacto custa o saldo, mas não encerra a corrida.</p>
@@ -156,11 +162,25 @@ function formatTime(seconds) {
   return `${String(minutes).padStart(2, '0')}:${String(wholeSeconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
 }
 
+// Bungee não tem algarismos tabulares (font-variant-numeric: tabular-nums não muda nada):
+// cada caractere vai numa célula de largura fixa, então o HUD não muda de tamanho.
+function setFixedWidthText(element, text) {
+  text = String(text);
+  if (element.dataset.text === text) return;
+  element.dataset.text = text;
+  element.replaceChildren(...[...text].map((char) => {
+    const cell = document.createElement('span');
+    cell.className = /[0-9]/.test(char) ? 'hud-digit' : 'hud-digit hud-digit-sep';
+    cell.textContent = char;
+    return cell;
+  }));
+}
+
 function updateHud(distance, speed) {
-  hudDistance.textContent = distance;
-  hudSpeed.textContent = speed;
-  hudRings.textContent = game.level?.ringBalance ?? 0;
-  hudTime.textContent = formatTime(game.getElapsedTime());
+  setFixedWidthText(hudDistance, distance);
+  setFixedWidthText(hudSpeed, speed);
+  setFixedWidthText(hudRings, game.level?.ringBalance ?? 0);
+  setFixedWidthText(hudTime, formatTime(game.getElapsedTime()));
 }
 
 function updateOverlay(distance) {
@@ -181,11 +201,30 @@ function updateOverlay(distance) {
   else overlay.innerHTML = renderPause(distance);
 }
 
+function updateAudioButton() {
+  const button = overlay.querySelector('[data-action="toggle-audio"]');
+  if (!button) return;
+  const muted = game.audio?.muted ?? false;
+  button.setAttribute('aria-pressed', String(muted));
+  button.innerHTML = `${muted ? 'Som desligado' : 'Som ligado'} <kbd>M</kbd>`;
+}
+
+function toggleAudio() {
+  if (!game.audio) return;
+  game.audio.toggleMuted();
+  updateAudioButton();
+  game.audio.play('click');
+}
+
 window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyC') game.switchCamera();
   if (e.code === 'KeyP' && !e.repeat) game.togglePause();
   if (e.code === 'Escape' && game.state === 'paused') game.togglePause();
   if (e.code === 'KeyR' && game.state === 'paused') window.location.reload();
+  if (e.code === 'KeyM' && game.state === 'paused') {
+    e.preventDefault();
+    toggleAudio();
+  }
   if ((e.code === 'Space' || e.code === 'KeyR') &&
       (game.state === 'lose' || game.state === 'win') && restartReady) {
     window.location.reload();
@@ -198,6 +237,7 @@ overlay.addEventListener('click', (event) => {
 
   if (button.dataset.action === 'resume') game.togglePause();
   else if (button.dataset.action === 'restart') window.location.reload();
+  else if (button.dataset.action === 'toggle-audio') toggleAudio();
 });
 
 window.addEventListener('resize', () => {

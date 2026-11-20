@@ -9,7 +9,8 @@ A `main` atual já possui:
 - coleta de anéis com HUD, espalhamento, recoleta e invulnerabilidade;
 - BuzzBombers e espinhos gerados ao longo da fase;
 - dano com consumo do saldo de anéis e derrota quando o saldo chega a zero;
-- pausa com lista de controles e botões de continuar/reiniciar;
+- pausa com lista de controles, botões de continuar/reiniciar e mute de áudio;
+- efeitos e trilha chiptune originais sintetizados no navegador;
 - vitória em 1000 m, tela de resultados com **tempo**, **anéis carregados / total coletado** e nota;
 - terreno com oito chunks ativos, permitindo voltar alguns trechos;
 - hazards gerados a 140 unidades para não aparecerem na segunda câmera;

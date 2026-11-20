@@ -24,7 +24,7 @@ Os espinhos são um modelo procedural (`src/game/rendering/entities/ObstacleMode
 
 ## Verificações
 
-- `npm test`: 67 testes.
+- `npm test`: 68 testes.
 - `npx eslint src tests`: sem erros.
 - `npm run build`: passa com base `/cinos-the-hedgehog-2/`.
 - Navegador: geração inicial mista, derrota de inimigo, dano com anéis, derrota sem anéis, remoção de hazards atrasados e vitória em 1000 m.

@@ -23,9 +23,10 @@ O projeto é um jogo 3D de corrida com câmera em perspectiva, terreno procedura
 - Inimigos que podem ser derrotados ao pular/girar e espinhos que causam dano.
 - Perda de anéis ao encostar em um perigo; sem saldo, a corrida termina.
 - Vitória ao alcançar 1000 m, tela de resultados com tempo, anéis e nota.
-- Pausa com lista de controles e botões para continuar ou reiniciar.
+- Pausa com lista de controles, botões para continuar/reiniciar e mute de som.
 - Reinício por teclado ou botão após vitória, derrota ou pausa.
 - HUD com distância, velocidade, anéis e cronômetro da fase.
+- Efeitos e trilha chiptune originais sintetizados via Web Audio, sem samples de terceiros.
 - Terreno com oito chunks ativos; o jogador pode voltar alguns trechos sem o mapa sumir.
 - Hazards gerados longe da segunda câmera para não aparecerem “nascendo” na tela.
 
@@ -41,8 +42,9 @@ O projeto é um jogo 3D de corrida com câmera em perspectiva, terreno procedura
 | Pausar/continuar | `P` ou `Esc` |
 | Reiniciar na pausa | `R` |
 | Reiniciar após vitória/derrota | `Espaço` ou `R` |
+| Ligar/desligar som (na pausa) | `M` |
 
-O menu de pausa repete esses atalhos em formato de teclas e oferece os botões **Continuar** e **Reiniciar**.
+O menu de pausa repete esses atalhos em formato de teclas e oferece os botões **Continuar**, **Reiniciar** e **Som ligado/desligado**.
 
 ### Regras principais
 
@@ -68,7 +70,7 @@ O Vite abre em `http://localhost:3001`.
 ### Verificações
 
 ```bash
-npm test                  # 67 testes
+npm test                  # 68 testes
 npx eslint src tests      # análise estática
 npm run build             # build de produção
 ```
@@ -98,8 +100,9 @@ docs/                         arquitetura, relatórios, guias e créditos
 - Modelo do BuzzBomber: [slider](https://sketchfab.com/sliderm).
 - Modelo do anel: [A Burnt Piece Of Chicken](https://sketchfab.com/That_guy_in_your_walls), sob CC BY 4.0.
 - Fontes **Bungee** e **Chakra Petch**: SIL Open Font License 1.1.
+- Áudio: efeitos e trilha originais sintetizados no projeto; nenhuma gravação de Sonic é redistribuída.
 
-Os detalhes e os textos integrais das licenças estão em [`docs/model-credits.md`](docs/model-credits.md) e [`docs/font-credits.md`](docs/font-credits.md).
+Os detalhes e os textos integrais das licenças estão em [`docs/model-credits.md`](docs/model-credits.md) e [`docs/font-credits.md`](docs/font-credits.md). A implementação de áudio está em [`docs/audio.md`](docs/audio.md).
 
 ### Documentação
 
@@ -107,6 +110,7 @@ Os detalhes e os textos integrais das licenças estão em [`docs/model-credits.m
 - [Diretrizes do projeto](docs/guidelines.md)
 - [Sistema de anéis](docs/rings.md)
 - [Inimigos e obstáculos](docs/obstacles.md)
+- [Áudio](docs/audio.md)
 - [Créditos das fontes](docs/font-credits.md)
 - [Montagem dos chunks](docs/montagem-chunks.md)
 - [Fundo procedural, água e shaders](docs/fundo-procedural.md)

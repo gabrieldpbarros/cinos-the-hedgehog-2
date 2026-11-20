@@ -101,6 +101,18 @@
             gap: 5px;
         }
 
+        /* Células de largura fixa para os números (ver setFixedWidthText em main.js):
+           0,73em cabe o algarismo mais largo do Bungee; separadores (: . -) usam 0,42em. */
+        .hud-digit {
+            display: inline-block;
+            width: 0.73em;
+            text-align: center;
+        }
+
+        .hud-digit-sep {
+            width: 0.42em;
+        }
+
         .hud-label {
             color: var(--muted);
             font-size: 9px;

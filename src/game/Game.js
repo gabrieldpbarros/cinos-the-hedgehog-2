@@ -1,5 +1,6 @@
 import { Level } from "./Level.js";
 import { SceneView } from "./rendering/SceneView.js";
+import { GameAudio } from "./rendering/GameAudio.js";
 import { CONFIG } from "./constants.js";
 
 export class Game {
@@ -8,10 +9,11 @@ export class Game {
     this.state     = 'menu'; // menu | playing | paused | win | lose
     this.mainInput = input;
     this.elapsedTime = 0;
+    this.audio = new GameAudio();
   }
 
   async startGame() {
-    this.level  = new Level(this.mainInput, CONFIG.levelDistance);
+    this.level  = new Level(this.mainInput, CONFIG.levelDistance, { audio: this.audio });
     await this.level.buildLevel();
     this.scene = new SceneView(this.canvas);
     this.level.sonic.update(0);
@@ -21,6 +23,7 @@ export class Game {
     for (const entity of this.level.entities) this.scene.drawEntity(entity);
     this.syncScene();
     this.state  = 'playing';
+    this.audio?.startMusic();
   }
 
   syncScene(dt = 0) {
@@ -43,11 +46,17 @@ export class Game {
       this.finishLineDrawn = true;
     }
 
-    if (defeated) this.state = 'lose';
+    if (defeated) {
+      this.state = 'lose';
+      this.audio?.play('lose');
+      this.audio?.stopMusic();
+    }
 
     if (this.state === 'playing' &&
         this.level.sonic.logic.getPosition().x >= this.level.finishX) {
       this.state = 'win';
+      this.audio?.play('win');
+      this.audio?.stopMusic();
     }
     this.syncScene(dt);
   }
@@ -79,8 +88,10 @@ export class Game {
   togglePause() {
     if (this.state === 'playing') {
       this.state = 'paused';
+      this.audio?.play('pause');
     } else if (this.state === 'paused') {
       this.state = 'playing';
+      this.audio?.play('resume');
     }
   }
 
