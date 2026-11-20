@@ -10,8 +10,8 @@ Este documento descreve a implementação atual do jogo. A engine é específica
 | Coordenação | `src/game/Game.js`, `src/game/Level.js` | Construir a partida, reunir terreno, entidades e controladores, decidir derrota e sincronizar a cena. |
 | Regras | `src/game/logic/` | Guardar posição, velocidade, ações, terreno, física e hitboxes sem depender de Three.js. |
 | Ponte entre camadas | `src/game/entities/Entity.js` | Manter lógica e modelo visual alinhados. |
-| Apresentação | `src/game/rendering/` | Criar malhas, materiais, animações, luzes, câmeras e renderizar. |
-| Recursos | `public/assets/`, `public/model-imports/` | Servir skybox, modelos e texturas por URL. |
+| Apresentação | `src/game/rendering/`, `index.html` | Criar malhas, materiais, animações, luzes, câmeras, HUD e overlays. |
+| Recursos | `public/assets/`, `public/model-imports/`, `public/fonts/` | Servir skybox, modelos, texturas e fontes por URL. |
 
 `Game` possui um `Level` e uma `SceneView`. `Level` possui um `Terrain`, as entidades Sonic/BuzzBomber e seus controladores. Cada `Entity` reúne uma `EntityLogic` e uma `EntityModel`. O modelo não decide colisões nem altera a velocidade; a lógica não manipula `THREE.Mesh`, câmeras ou materiais.
 
@@ -37,26 +37,26 @@ As setas indicam colaboração ou passagem de dados; `Chunk` e `GreenHillChunkMo
 
 ## Construção da partida
 
-1. `main.js` encontra canvas, HUD e overlay, instancia `Input`, registra eventos de teclado e redimensionamento e chama `Game.startGame()`.
-2. `Game.startGame()` cria `Level` e espera `buildLevel()`. `Level` cria cinco chunks iniciais, calcula a altura inicial, carrega os modelos de Sonic e BuzzBomber com `GLTFLoader` e constrói as respectivas `Entity`.
+1. `main.js` encontra canvas, HUD e overlay, instancia `Input`, registra eventos de teclado, botões do overlay e redimensionamento e chama `Game.startGame()`.
+2. `Game.startGame()` cria `Level` e espera `buildLevel()`. `Level` cria cinco chunks iniciais, calcula a altura inicial, carrega Sonic, BuzzBomber e o modelo de anel com `GLTFLoader`, constrói as respectivas `Entity` e gera os primeiros inimigos/obstáculos.
 3. O construtor de `Entity` mede a caixa do modelo com `THREE.Box3`, inicializa a hitbox lógica, prepara a caixa visual de depuração e aplica um deslocamento para alinhar o centro visual à origem lógica.
-4. `Level` posiciona as entidades em relação ao terreno. O Sonic recebe uma função `groundAt(x)` que retorna altura e normal da superfície; o BuzzBomber atual fica estático, sem gravidade.
-5. `Level` associa `PlayerController` ao Sonic e `StaticController` ao BuzzBomber. `Game` cria `SceneView`, adiciona modelos e chunks, sincroniza câmera/luzes e muda o estado para `playing`.
+4. `Level` posiciona Sonic e hazards em relação ao terreno. O Sonic recebe uma função `groundAt(x)` que retorna altura e normal da superfície; BuzzBombers e espinhos permanecem estáticos.
+5. `Level` associa `PlayerController` ao Sonic e `StaticController` aos hazards. `Game` cria `SceneView`, adiciona modelos e chunks, sincroniza câmera/luzes e muda o estado para `playing`.
 
-O loop de `main.js` começa antes de terminar o carregamento assíncrono. Durante esse intervalo, `Game.update()` retorna porque o estado ainda é `menu`. Não há tela de carregamento própria; a skybox temporária é carregada por callback da `TextureLoader`.
+O loop de `main.js` começa antes de terminar o carregamento assíncrono. Durante esse intervalo, `Game.update()` retorna porque o estado ainda é `menu`; o HUD e o overlay continuam sendo atualizados. A skybox é carregada por callback da `TextureLoader`.
 
 ## Ordem de um quadro
 
 `main.js` usa `requestAnimationFrame` e `THREE.Timer`. Em cada quadro, calcula `dt = min(delta, CONFIG.maxDt)`, com máximo atual de 0,05 s, e chama `Game.update(dt)`. O limite evita um salto físico grande após uma pausa do navegador.
 
-1. Se o estado não for `playing`, `Game.update()` termina sem mover ou renderizar uma nova cena.
-2. `Level.update()` chama `updateEntity(dt)` nos dois controladores. O `PlayerController` lê as teclas, envia ações ao Sonic e atualiza sua entidade. O `StaticController` apenas atualiza a entidade que controla.
+1. Se o estado não for `playing`, `Game.update()` termina sem mover a partida; `main.js` continua atualizando HUD e overlay.
+2. `Level.update()` chama `updateEntity(dt)` no `PlayerController` e nos controladores dos hazards. O jogador lê as teclas, envia ações ao Sonic e atualiza sua entidade.
 3. `Entity.update()` executa a lógica, reflete eventuais mudanças de altura da hitbox na caixa de depuração, copia a posição lógica para a raiz visual e atualiza animações.
 4. `Level` impede que o Sonic volte além do início do primeiro chunk disponível e chama `Terrain.update(x)`. O terreno devolve todos os chunks criados naquele quadro.
-5. `SceneView.updateChunks()` acrescenta as novas malhas e descarta as antigas. `Game` verifica colisão entre Sonic e BuzzBomber e, se houver contato, muda o estado para `lose`.
-6. `Game.syncScene()` acompanha a posição do Sonic e a altura do terreno com as câmeras e luzes, depois renderiza. Por fim, `main.js` atualiza distância, velocidade e overlay.
+5. `Level` sincroniza os anéis dos chunks ativos, atualiza os anéis, faz a coleta e resolve o contato com inimigos/obstáculos. O resultado informa chunks, entidades adicionadas/removidas e se a partida terminou.
+6. `Game` atualiza a cena, desenha a linha de chegada, aplica `win`/`lose` e sincroniza câmera/luzes. `main.js` atualiza distância, velocidade, saldo de anéis e overlay.
 
-A distância mostrada no HUD vem de `Game.getDistance()`: `posiçãoX do Sonic - startPosX`. Ela ainda não constitui um sistema separado de pontuação.
+A pontuação visível é o **saldo de anéis** no HUD. Ao final, a tela de resultados mostra **anéis carregados / total coletado**, tempo e nota de A a F calculada por anéis por minuto. A distância continua sendo o critério de vitória (1000 m).
 
 ## Entrada, ações e controladores
 
@@ -65,11 +65,13 @@ A distância mostrada no HUD vem de `Game.getDistance()`: `posiçãoX do Sonic -
 | Ação | Teclas | Efeito atual |
 | --- | --- | --- |
 | `MOVE_LEFT` / `MOVE_RIGHT` | A/←, D/→ | Acelera ou freia no eixo X. |
-| `JUMP` | Espaço | Salta; manter pressionado causa novo salto ao pousar. |
+| `JUMP` | Espaço | Salta e entra em `Spin`; manter pressionado causa novo salto ao pousar. |
 | `CROUCH` | Ctrl esquerdo/direito | Reduz o limite de velocidade horizontal à metade. |
-| `BOOST` | Shift esquerdo/direito | É registrada, mas ainda não modifica a física. |
+| `BOOST` | Shift esquerdo/direito | Ação reservada; não altera a física nesta versão. |
 
-`Entity.handleAction(action, state)` encaminha a ação para `logic.do()` ou `logic.stop()`, que alteram `currentActions`. O controlador decide *qual* intenção existe; a entidade decide *como* ela afeta sua física. `StaticController` conserva a mesma interface de atualização, embora não envie comandos de movimento. A tecla C, usada para alternar câmeras, é tratada diretamente em `main.js`.
+Além do `PlayerController`, `main.js` trata `C` (câmera), `P`/`Esc` (pausa), `R` (reinício na pausa ou no fim) e `Espaço` (reinício após vitória/derrota). Os mesmos atalhos aparecem no menu de pausa e nos botões do overlay.
+
+`Entity.handleAction(action, state)` encaminha a ação para `logic.do()` ou `logic.stop()`, que alteram `currentActions`. O controlador decide *qual* intenção existe; a entidade decide *como* ela afeta sua física. `StaticController` conserva a mesma interface de atualização, embora não envie comandos de movimento.
 
 ## Entidades, posição e hitboxes
 
@@ -82,7 +84,9 @@ Há dois ajustes específicos já aplicados:
 - O BuzzBomber mantém a altura e a profundidade medidas do modelo, mas usa 80% da largura medida em X.
 - O Sonic usa 60% da altura normal durante `Spin`. A largura e a profundidade não mudam. Quando volta ao chão, a posição central é ajustada para preservar a base da hitbox.
 
-`EntityLogic.checkCollision(other)` compara caixas alinhadas aos eixos. Em X, por exemplo, há contato quando `abs(x1 - x2) <= (largura1 + largura2) / 2`; a condição deve valer também em Y e Z. `checkEventRegion()` faz comparação semelhante com uma margem de 2 unidades por eixo, e existe um `Set` chamado `inEventRegion`. Essa região ainda não participa do fluxo principal: `Game` verifica diretamente o par Sonic–BuzzBomber a cada quadro.
+`EntityLogic.checkCollision(other)` faz uma varredura do segmento percorrido pela entidade contra a caixa AABB do outro elemento. Isso evita atravessar anéis ou hazards em um quadro com deslocamento grande. `checkEventRegion()` mantém uma comparação com margem de 2 unidades por eixo e o `Set` `inEventRegion`; essa região não faz parte do fluxo principal.
+
+O contato é resolvido em `Level.resolveHazardContact()`: a coleta de anéis acontece antes; girar sobre um BuzzBomber o derrota, enquanto o contato com inimigo sem giro ou com espinho consome o saldo de anéis e concede invulnerabilidade. Sem saldo, a partida termina. A implementação detalhada está em [rings.md](rings.md) e [obstacles.md](obstacles.md).
 
 ## Movimento e contato com o terreno
 
@@ -112,6 +116,8 @@ Os modelos de Sonic e BuzzBomber são carregados por fábricas assíncronas ante
 
 ## Estado atual, testes e pontos de extensão
 
-`Game.state` começa como `menu`, passa a `playing` após o carregamento e vira `lose` na colisão. O HUD mostra distância, velocidade e estado. Em derrota, `main.js` espera o Espaço ser solto antes de aceitar outro pressionamento para recarregar a página. O construtor de `Level` aceita `finishX`, mas esse parâmetro ainda não produz vitória; modo distância, modo infinito selecionável e pausa também não estão implementados.
+`Game.state` percorre `menu`, `playing`, `paused`, `win` e `lose`. A vitória ocorre ao cruzar `finishX` (1000 m); a derrota ocorre quando o Sonic encosta em um perigo sem saldo de anéis. O menu de pausa congela a partida e mostra os controles e botões de continuar/reiniciar. As telas de vitória e derrota exibem distância, tempo, **anéis carregados / total coletado** e, na vitória, a nota.
 
-Os testes em `tests/` usam o test runner do Node. Eles verificam chunks, colisão, controle, física, animações e luzes com objetos simples. Para mudanças na engine, executem `npm test`, `npx eslint src tests` e `npm run build`; depois testem a cena em navegador, inclusive rampas, troca de câmera e tamanho da janela. A construção do modo distância deve se concentrar em `Game`/`Level`; uma nova entidade deve fornecer lógica, modelo e controlador quando necessário, preservando a separação de responsabilidades acima.
+O HUD foi simplificado para distância, velocidade e anéis; o título do jogo não aparece durante a partida. A interface usa Bungee e Chakra Petch, registradas em [font-credits.md](font-credits.md), e os créditos de modelos ficam em [model-credits.md](model-credits.md).
+
+Os testes em `tests/` usam o test runner do Node. Eles verificam chunks, colisão, controle, física, animações, anéis, hazards, pausa, vitória e pontuação. Para mudanças na engine, executem `npm test`, `npx eslint src tests` e `npm run build`; depois testem a cena em navegador, inclusive rampas, troca de câmera, pausa e tamanho da janela. A construção do modo distância fica em `Game`/`Level`; uma nova entidade deve fornecer lógica, modelo e controlador quando necessário, preservando a separação de responsabilidades acima.

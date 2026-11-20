@@ -1,6 +1,6 @@
 # Inimigos e obstáculos
 
-A branch `testandoInimigosEObstaculos` foi rebaseada sobre o sistema de anéis da `feat/Aneis` para preservar os recursos que já estavam na `main` (pausa, chegada, pontuação e reinício).
+Sistema integrado à `main` junto com anéis, pausa, chegada, pontuação e reinício. A versão original do PR #13 foi portada para a arquitetura atual e ganhou testes próprios.
 
 ## Geração
 

@@ -2,14 +2,65 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Cinos the Hedgehog</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#061528">
+    <title>Cinos the Hedgehog 2</title>
     <style>
+        @font-face {
+            font-family: 'Bungee';
+            src: url('./fonts/bungee-latin.woff2') format('woff2');
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Chakra Petch';
+            src: url('./fonts/chakra-petch-400-latin.woff2') format('woff2');
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Chakra Petch';
+            src: url('./fonts/chakra-petch-600-latin.woff2') format('woff2');
+            font-style: normal;
+            font-weight: 600;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Chakra Petch';
+            src: url('./fonts/chakra-petch-700-latin.woff2') format('woff2');
+            font-style: normal;
+            font-weight: 700;
+            font-display: swap;
+        }
+
+        :root {
+            --font-display: 'Bungee', 'Arial Black', sans-serif;
+            --font-ui: 'Chakra Petch', 'Segoe UI', sans-serif;
+            --ink: #f2f5f8;
+            --muted: #aebbc8;
+            --line: rgba(255, 255, 255, 0.16);
+            --line-soft: rgba(255, 255, 255, 0.09);
+            --gold: #ffd34d;
+            --panel: #0d141c;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         html, body {
             margin: 0;
             padding: 0;
             height: 100%;
             overflow: hidden;
-            background: #000;
+            background: #020812;
+            color: var(--ink);
+            font-family: var(--font-ui);
         }
 
         #stage {
@@ -17,6 +68,7 @@
             width: 100vw;
             height: 100vh;
             overflow: hidden;
+            background: #020812;
         }
 
         canvas#canvas {
@@ -27,14 +79,94 @@
 
         #hud {
             position: absolute;
-            top: 8px;
-            left: 8px;
-            color: #fff;
-            font-family: sans-serif;
-            font-size: 14px;
+            top: 14px;
+            left: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: calc(100vw - 28px);
+            padding: 6px 10px;
+            border: 1px solid var(--line-soft);
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.36);
+            color: var(--ink);
             pointer-events: none;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-            z-index: 1;
+            z-index: 2;
+            white-space: nowrap;
+        }
+
+        .hud-item {
+            display: flex;
+            align-items: baseline;
+            gap: 5px;
+        }
+
+        .hud-label {
+            color: var(--muted);
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .hud-item strong {
+            color: var(--ink);
+            font-family: var(--font-display);
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1;
+        }
+
+        .hud-item strong small {
+            color: var(--muted);
+            font-family: var(--font-ui);
+            font-size: 9px;
+            font-weight: 600;
+        }
+
+        .hud-item.rings strong {
+            color: var(--gold);
+        }
+
+        .hud-sep {
+            color: rgba(255, 255, 255, 0.25);
+            font-size: 11px;
+        }
+
+        .hud-hint {
+            position: absolute;
+            left: 14px;
+            bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--muted);
+            font-size: 10px;
+            pointer-events: none;
+            text-shadow: 0 1px 2px #000;
+        }
+
+        kbd {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            min-height: 19px;
+            padding: 1px 5px;
+            color: var(--ink);
+            font-family: var(--font-ui);
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1;
+            border: 1px solid var(--line);
+            border-radius: 3px;
+            background: rgba(0, 0, 0, 0.38);
+            white-space: nowrap;
+        }
+
+        .keys kbd.arrow {
+            font-family: 'Segoe UI Symbol', 'Noto Sans Symbols 2', sans-serif;
+            font-size: 13px;
         }
 
         #overlay {
@@ -43,92 +175,315 @@
             display: none;
             align-items: center;
             justify-content: center;
-            flex-direction: column;
-            color: #fff;
-            font-family: sans-serif;
-            font-size: 28px;
-            text-align: center;
-            background: rgba(0, 0, 0, 0.55);
-            z-index: 2;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.74);
+            z-index: 10;
             pointer-events: none;
         }
 
-        #overlay small {
-            font-size: 16px;
-            margin-top: 12px;
-            opacity: 0.9;
+        #overlay.is-open {
+            display: flex;
+            pointer-events: auto;
         }
 
-        #overlay .results {
+        .overlay-panel {
+            width: min(720px, 100%);
+            max-height: calc(100vh - 40px);
+            overflow: auto;
+            padding: clamp(22px, 4vw, 36px);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+        }
+
+        .eyebrow {
+            margin: 0 0 8px;
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+
+        .panel-title {
+            margin: 0;
+            color: var(--ink);
+            font-family: var(--font-display);
+            font-size: clamp(28px, 4.5vw, 46px);
+            font-weight: 400;
+            line-height: 1;
+        }
+
+        .panel-subtitle {
+            max-width: 58ch;
+            margin: 10px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .controls-heading {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 24px 0 4px;
+        }
+
+        .controls-heading h2 {
+            margin: 0;
+            color: var(--ink);
+            font-family: var(--font-display);
+            font-size: 15px;
+            font-weight: 400;
+            text-transform: uppercase;
+        }
+
+        .controls-heading span {
+            color: var(--muted);
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .control-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(150px, 1fr));
-            gap: 16px 28px;
-            margin-top: 28px;
-            padding: 22px 28px;
-            border: 1px solid rgba(255, 255, 255, 0.35);
-            border-radius: 12px;
-            background: rgba(0, 0, 0, 0.45);
-            font-size: 16px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0 24px;
+            border-top: 1px solid var(--line-soft);
         }
 
-        #overlay .results div {
+        .control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            min-height: 38px;
+            border-bottom: 1px solid var(--line-soft);
+        }
+
+        .control > span:first-child {
+            color: #dce4eb;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .keys {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .keys em {
+            color: var(--muted);
+            font-style: normal;
+            font-size: 9px;
+        }
+
+        .panel-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 22px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 38px;
+            padding: 8px 14px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            font-family: var(--font-ui);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            color: #10161d;
+            border-color: var(--gold);
+            background: var(--gold);
+        }
+
+        .btn-primary kbd {
+            color: #10161d;
+            border-color: rgba(16, 22, 29, 0.28);
+            background: rgba(255, 255, 255, 0.24);
+        }
+
+        .btn-ghost {
+            color: var(--ink);
+            border-color: var(--line);
+            background: transparent;
+        }
+
+        .btn:hover {
+            filter: brightness(1.08);
+        }
+
+        .btn:focus-visible {
+            outline: 2px solid var(--ink);
+            outline-offset: 2px;
+        }
+
+        .panel-footnote {
+            margin: 20px 0 0;
+            padding-top: 12px;
+            border-top: 1px solid var(--line-soft);
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .panel-footnote strong {
+            color: var(--ink);
+        }
+
+        .results {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0 24px;
+            margin-top: 20px;
+            border-top: 1px solid var(--line-soft);
+        }
+
+        .result-card {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 3px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--line-soft);
         }
 
-        #overlay .results span {
-            font-size: 13px;
-            opacity: 0.75;
+        .result-card > span {
+            color: var(--muted);
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
         }
 
-        #overlay .results strong {
-            font-size: 26px;
+        .result-card strong {
+            color: var(--ink);
+            font-family: var(--font-display);
+            font-size: clamp(18px, 2.4vw, 26px);
+            font-weight: 400;
+            line-height: 1;
         }
 
-        #overlay .results .grade strong {
-            color: #ffd54f;
-            font-size: 42px;
+        .result-card strong .result-total {
+            color: var(--muted);
+            font-family: var(--font-ui);
+            font-size: 0.6em;
+            font-weight: 600;
         }
 
-        #overlay .results small {
-            display: block;
-            font-size: 11px;
-            margin: 2px 0 0;
+        .result-card.grade strong {
+            color: var(--gold);
         }
 
-        @media (max-width: 480px) {
-            #overlay .results {
-                grid-template-columns: 1fr 1fr;
-                gap: 12px;
-                padding: 16px;
-            }
+        .result-card small {
+            color: var(--muted);
+            font-size: 10px;
         }
 
         #credits {
             position: absolute;
-            right: 8px;
-            bottom: 8px;
-            color: #fff;
-            font: 11px sans-serif;
+            right: 14px;
+            bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            color: rgba(226, 236, 244, 0.62);
+            font-size: 9px;
+            line-height: 1.4;
+            text-align: right;
             text-shadow: 0 1px 2px #000;
+            pointer-events: none;
         }
 
-        #credits a { color: inherit; }
+        #credits a {
+            color: inherit;
+            text-decoration: none;
+            border-bottom: 1px dotted rgba(226, 236, 244, 0.3);
+        }
+
+        #credits a:hover {
+            color: var(--ink);
+            border-bottom-color: var(--ink);
+        }
+
+        @media (max-width: 720px) {
+            #hud {
+                flex-wrap: wrap;
+                gap: 6px 10px;
+            }
+
+            .control-grid,
+            .results {
+                grid-template-columns: 1fr;
+            }
+
+            #credits {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .panel-actions .btn {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
     <div id="stage">
-        <canvas id="canvas"></canvas>
+        <canvas id="canvas" aria-label="Cinos the Hedgehog 2"></canvas>
+
         <div id="hud">
+            <div class="hud-item">
+                <span class="hud-label">Distância</span>
+                <strong><span id="hud-distance">0.0</span><small>m</small></strong>
+            </div>
+            <span class="hud-sep">·</span>
+            <div class="hud-item">
+                <span class="hud-label">Velocidade</span>
+                <strong><span id="hud-speed">0.0</span><small>u/s</small></strong>
+            </div>
+            <span class="hud-sep">·</span>
+            <div class="hud-item rings">
+                <span class="hud-label">Anéis</span>
+                <strong id="hud-rings">0</strong>
+            </div>
         </div>
-        <div id="overlay"></div>
+
+        <div class="hud-hint">
+            <kbd>P</kbd> pausar <span>·</span> <kbd>C</kbd> câmera
+        </div>
+
+        <div id="overlay" aria-hidden="true"></div>
+
         <div id="credits">
             <div>
-                Modelo de Sonic: <a href="https://sketchfab.com/3d-models/sonic-lost-world-sonic-model-animator-fan-fb39590ebb7843bf8aac39773c0260ff" target="_blank" rel="noopener noreferrer">lucasvicentedesilva2009</a>
-                · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>
+                Modelos:
+                <a href="https://sketchfab.com/3d-models/sonic-lost-world-sonic-model-animator-fan-fb39590ebb7843bf8aac39773c0260ff" target="_blank" rel="noopener noreferrer">Sonic</a>
+                · <a href="https://sketchfab.com/sliderm" target="_blank" rel="noopener noreferrer">BuzzBomber</a>
+                · <a href="https://sketchfab.com/3d-models/sonic-ring-e4929fb428bb4c128f820b0bcd08848c" target="_blank" rel="noopener noreferrer">Anel</a>
             </div>
-            <div>Modelo do BuzzBomber: <a href="https://sketchfab.com/sliderm" target="_blank" rel="noopener noreferrer">slider</a></div>
+            <div>
+                Fontes:
+                <a href="https://fonts.google.com/specimen/Bungee" target="_blank" rel="noopener noreferrer">Bungee</a>
+                e <a href="https://fonts.google.com/specimen/Chakra+Petch" target="_blank" rel="noopener noreferrer">Chakra Petch</a>
+                · SIL OFL 1.1
+            </div>
         </div>
     </div>
 

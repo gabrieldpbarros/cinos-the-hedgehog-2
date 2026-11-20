@@ -1,5 +1,7 @@
 # Relatório 4 de Computação Gráfica: Cinos the Hedgehog 2
 
+> **Documento histórico.** Depois desta entrega, a `main` recebeu anéis, inimigos/obstáculos, pontuação, pausa, vitória e derrota. Consulte o [README](../README.md) e a [arquitetura](arquitetura-engine.md) para o estado vigente.
+
 ## Evolução em relação às entregas anteriores
 
 Uma vez que todas as requisições solicitadas pela entrega 4 já foram implementadas previamente, esta etapa foi voltada para o desenvolvimento de outras funcionalidades essenciais para o jogo. O código foi refatorado em uma ideia de *mini-engine*, na qual os elementos do jogo foram divididos em lógica e visual.
