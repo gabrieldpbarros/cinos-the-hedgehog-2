@@ -1,6 +1,6 @@
 import { Level } from "./Level.js";
 import { SceneView } from "./rendering/SceneView.js";
-import { AudioManager } from "./rendering/audio/AudioManager.js";
+import { AudioManager } from "./audio/AudioManager.js";
 import { CONFIG } from "./constants.js";
 
 export class Game {

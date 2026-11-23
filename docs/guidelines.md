@@ -43,7 +43,8 @@ src/game/
   constants.js                parâmetros de movimento e tempo
   entities/Entity.js          ponte entre lógica e modelo
   logic/                      entrada, controladores, entidades e terreno
-  rendering/                  cena, luzes, fundo procedural, modelos, anéis, obstáculos e áudio
+  rendering/                  cena, luzes, fundo procedural, modelos, anéis e obstáculos
+  audio/                      música, efeitos sonoros e configuração de arquivos
 public/fonts/                 Bungee e Chakra Petch + licenças OFL
 public/model-imports/         modelos e arquivos associados
 tests/                        testes Node da lógica e da apresentação

@@ -4,7 +4,7 @@ O jogo **não usa gravações ou trilhas ripadas dos jogos do Sonic**. Para evit
 
 ## Implementação
 
-O `AudioManager` (`src/game/rendering/audio/AudioManager.js`) estende o `GameAudio` e compartilha o mesmo `AudioContext`, criado somente depois de uma interação do jogador. Os barramentos continuam separados:
+O `AudioManager` (`src/game/audio/AudioManager.js`) estende o `GameAudio` e compartilha o mesmo `AudioContext`, criado somente depois de uma interação do jogador. Os barramentos continuam separados:
 
 - `sfxBus`: efeitos curtos;
 - `musicBus`: trilha de fundo;
@@ -14,7 +14,7 @@ O contexto é desbloqueado no primeiro `keydown` ou `pointerdown`. Se o navegado
 
 ## Arquivos e fallback
 
-O manifesto fica em `src/game/rendering/audio/audioManifest.js`. Cada entrada começa como `null`; nesse caso o som sintetizado correspondente é usado. Para ativar um arquivo, coloque-o em `public/audio/` e informe o caminho relativo:
+O manifesto fica em `src/game/audio/audioManifest.js`. Cada entrada começa como `null`; nesse caso o som sintetizado correspondente é usado. Para ativar um arquivo, coloque-o em `public/audio/` e informe o caminho relativo:
 
 ```js
 export const AUDIO_MANIFEST = {

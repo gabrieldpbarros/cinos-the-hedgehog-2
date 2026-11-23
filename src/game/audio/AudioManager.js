@@ -1,4 +1,4 @@
-import { GameAudio } from '../GameAudio.js';
+import { GameAudio } from './GameAudio.js';
 import { AUDIO_MANIFEST } from './audioManifest.js';
 
 const DEFAULT_TRACK = 'level1';

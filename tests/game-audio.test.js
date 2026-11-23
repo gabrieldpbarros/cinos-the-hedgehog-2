@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { GameAudio } from '../src/game/rendering/GameAudio.js';
+import { GameAudio } from '../src/game/audio/GameAudio.js';
 
 test('audio mute toggles and persists without an AudioContext', () => {
   const values = new Map();

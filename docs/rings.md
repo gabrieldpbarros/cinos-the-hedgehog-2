@@ -17,7 +17,8 @@ Sistema integrado à `main`, com estado em `Level` e entidades integradas ao flu
 ## Arquivos alterados
 
 - Lógica e integração: `src/game/Level.js`, `src/game/Game.js`, `src/game/logic/entities/Ring.js`, `src/game/logic/entities/EntityLogic.js`, `src/game/logic/entities/Sonic.js`, `src/game/logic/controllers/PlayerController.js`.
-- Apresentação: `src/game/rendering/entities/RingModel.js`, `src/game/rendering/GameAudio.js`, `src/game/rendering/entities/SonicModel.js`, `src/game/rendering/SceneView.js`, `src/main.js`.
+- Apresentação: `src/game/rendering/entities/RingModel.js`, `src/game/rendering/entities/SonicModel.js`, `src/game/rendering/SceneView.js`, `src/main.js`.
+- Áudio: `src/game/audio/GameAudio.js`.
 - Regressões: `tests/rings.test.js`, `tests/game.test.js`, `tests/enemies.test.js`, `tests/player-controller.test.js`. Os mocks existentes foram ajustados às novas interfaces; o mock de chegada já estava incompleto e recebeu `drawFinishLine`.
 - Documentação: `docs/model-credits.md`, este relatório, `docs/rings-pr.md` e seis capturas em `docs/evidence/rings-*.jpg`.
 

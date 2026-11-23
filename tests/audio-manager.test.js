@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { AudioManager } from '../src/game/rendering/audio/AudioManager.js';
+import { AudioManager } from '../src/game/audio/AudioManager.js';
 
 test('audio manager persists master volume and falls back to synthesized audio', () => {
   const values = new Map();

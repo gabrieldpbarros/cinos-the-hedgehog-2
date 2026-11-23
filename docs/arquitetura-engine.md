@@ -11,6 +11,7 @@ Este documento descreve a implementação atual do jogo. A engine é específica
 | Regras | `src/game/logic/` | Guardar posição, velocidade, ações, terreno, física e hitboxes sem depender de Three.js. |
 | Ponte entre camadas | `src/game/entities/Entity.js` | Manter lógica e modelo visual alinhados. |
 | Apresentação | `src/game/rendering/`, `index.html` | Criar malhas, materiais, animações, luzes, câmeras, HUD e overlays. |
+| Áudio | `src/game/audio/` | Tocar música e efeitos, ajustar volume e carregar arquivos opcionais. |
 | Recursos | `public/assets/`, `public/model-imports/`, `public/fonts/` | Servir modelos, texturas e fontes por URL. |
 
 `Game` possui um `Level` e uma `SceneView`. `Level` possui um `Terrain`, as entidades Sonic/BuzzBomber e seus controladores. Cada `Entity` reúne uma `EntityLogic` e uma `EntityModel`. O modelo não decide colisões nem altera a velocidade; a lógica não manipula `THREE.Mesh`, câmeras ou materiais.
