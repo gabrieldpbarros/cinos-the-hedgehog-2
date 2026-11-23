@@ -11,7 +11,8 @@ Este documento descreve a implementação atual do jogo. A engine é específica
 | Regras | `src/game/logic/` | Guardar posição, velocidade, ações, terreno, física e hitboxes sem depender de Three.js. |
 | Ponte entre camadas | `src/game/entities/Entity.js` | Manter lógica e modelo visual alinhados. |
 | Apresentação | `src/game/rendering/`, `index.html` | Criar malhas, materiais, animações, luzes, câmeras, HUD e overlays. |
-| Recursos | `public/assets/`, `public/model-imports/`, `public/fonts/` | Servir skybox, modelos, texturas e fontes por URL. |
+| Áudio | `src/game/audio/` | Tocar música e efeitos, ajustar volume e carregar arquivos opcionais. |
+| Recursos | `public/assets/`, `public/model-imports/`, `public/fonts/` | Servir modelos, texturas e fontes por URL. |
 
 `Game` possui um `Level` e uma `SceneView`. `Level` possui um `Terrain`, as entidades Sonic/BuzzBomber e seus controladores. Cada `Entity` reúne uma `EntityLogic` e uma `EntityModel`. O modelo não decide colisões nem altera a velocidade; a lógica não manipula `THREE.Mesh`, câmeras ou materiais.
 
@@ -38,12 +39,12 @@ As setas indicam colaboração ou passagem de dados; `Chunk` e `GreenHillChunkMo
 ## Construção da partida
 
 1. `main.js` encontra canvas, HUD e overlay, instancia `Input`, registra eventos de teclado, botões do overlay e redimensionamento e chama `Game.startGame()`.
-2. `Game.startGame()` cria `Level` e espera `buildLevel()`. `Level` cria cinco chunks iniciais, calcula a altura inicial, carrega Sonic, BuzzBomber e o modelo de anel com `GLTFLoader`, constrói as respectivas `Entity` e gera os primeiros inimigos/obstáculos.
+2. `Game.startGame()` cria `Level` e espera `buildLevel()`. `Level` cria oito chunks iniciais, calcula a altura inicial, carrega Sonic, BuzzBomber e o modelo de anel com `GLTFLoader`, constrói as respectivas `Entity` e gera os primeiros inimigos/obstáculos.
 3. O construtor de `Entity` mede a caixa do modelo com `THREE.Box3`, inicializa a hitbox lógica, prepara a caixa visual de depuração e aplica um deslocamento para alinhar o centro visual à origem lógica.
 4. `Level` posiciona Sonic e hazards em relação ao terreno. O Sonic recebe uma função `groundAt(x)` que retorna altura e normal da superfície; BuzzBombers e espinhos permanecem estáticos.
 5. `Level` associa `PlayerController` ao Sonic e `StaticController` aos hazards. `Game` cria `SceneView`, adiciona modelos e chunks, sincroniza câmera/luzes e muda o estado para `playing`.
 
-O loop de `main.js` começa antes de terminar o carregamento assíncrono. Durante esse intervalo, `Game.update()` retorna porque o estado ainda é `menu`; o HUD e o overlay continuam sendo atualizados. A skybox é carregada por callback da `TextureLoader`.
+O loop de `main.js` começa antes de terminar o carregamento assíncrono. Durante esse intervalo, `Game.update()` retorna porque o estado ainda é `menu`; o HUD e o overlay continuam sendo atualizados.
 
 ## Ordem de um quadro
 
@@ -56,7 +57,7 @@ O loop de `main.js` começa antes de terminar o carregamento assíncrono. Durant
 5. `Level` sincroniza os anéis dos chunks ativos, atualiza os anéis, faz a coleta e resolve o contato com inimigos/obstáculos. O resultado informa chunks, entidades adicionadas/removidas e se a partida terminou.
 6. `Game` atualiza a cena, desenha a linha de chegada, aplica `win`/`lose` e sincroniza câmera/luzes. `main.js` atualiza distância, velocidade, saldo de anéis e overlay.
 
-A pontuação visível é o **saldo de anéis** no HUD. Ao final, a tela de resultados mostra **anéis carregados / total coletado**, tempo e nota de A a F calculada por anéis por minuto. A distância continua sendo o critério de vitória (1000 m).
+O HUD mostra distância, velocidade, **saldo de anéis** e o **tempo da fase**. Ao final, a tela de resultados repete o tempo e mostra **anéis carregados / total coletado** e nota de A a F calculada por anéis por minuto. A distância continua sendo o critério de vitória (1000 m).
 
 ## Entrada, ações e controladores
 
@@ -66,7 +67,8 @@ A pontuação visível é o **saldo de anéis** no HUD. Ao final, a tela de resu
 | --- | --- | --- |
 | `MOVE_LEFT` / `MOVE_RIGHT` | A/←, D/→ | Acelera ou freia no eixo X. |
 | `JUMP` | Espaço | Salta e entra em `Spin`; manter pressionado causa novo salto ao pousar. |
-| `CROUCH` | Ctrl esquerdo/direito | Reduz o limite de velocidade horizontal à metade. |
+| `CROUCH` | S/↓ | No chão, ignora o movimento horizontal (o Sonic freia até parar) e, parado, agacha. |
+| `LOOK_UP` | W/↑ | Igual ao `CROUCH`, mas olha para cima; se as duas teclas estiverem pressionadas, agachar vence. |
 | `BOOST` | Shift esquerdo/direito | Ação reservada; não altera a física nesta versão. |
 
 Além do `PlayerController`, `main.js` trata `C` (câmera), `P`/`Esc` (pausa), `R` (reinício na pausa ou no fim) e `Espaço` (reinício após vitória/derrota). Os mesmos atalhos aparecem no menu de pausa e nos botões do overlay.
@@ -104,19 +106,25 @@ O contato é resolvido em `Level.resolveHazardContact()`: a coleta de anéis aco
 
 `surfaceStart` acumula a distância percorrida *sobre* a superfície, separada de `initialX`. O fim é `surfaceEnd = surfaceStart + hypot(length, endY - baseY)`. `Terrain` usa `endY` e `surfaceEnd` do último chunk para criar o seguinte: o primeiro mantém continuidade de altura; o segundo mantém continuidade das coordenadas UV da grama. As estratégias são sorteadas sem restrição de transição, portanto uma troca brusca entre rampas ainda pode produzir uma quina.
 
-`Terrain` cria cinco chunks iniciais. Quando o X do Sonic alcança o início do terceiro chunk da lista, acrescenta outro na frente e remove o mais antigo. Um `while` repete a operação se o personagem avançar mais de um trecho em um quadro. `getHeightAt(x)` e `getNormalVectorAt(x)` consultam o chunk que contém X; fora dos chunks ativos, a altura é `null`.
+`Terrain` cria oito chunks iniciais e mantém oito ativos. Quando o X do Sonic alcança o início do quinto chunk da lista, acrescenta outro na frente e remove o mais antigo. Isso deixa três chunks atrás do jogador, permitindo voltar alguns trechos sem o mapa desaparecer. Um `while` repete a operação se o personagem avançar mais de um trecho em um quadro. `getHeightAt(x)` e `getNormalVectorAt(x)` consultam o chunk que contém X; fora dos chunks ativos, a altura é `null`.
 
 Na apresentação, `TerrainModel` cria um `GreenHillChunkModel` por chunk. Este gera uma `BufferGeometry` com quatro vértices e dois triângulos por face, preenchendo `positions`, `uvs` e `indices`. A parte inferior de cada ponta fica `soilDepth` abaixo do topo correspondente. Os materiais usam `CanvasTexture`: a terra tem quadrados alternados e a grama, listras. `RepeatWrapping` repete os padrões; as coordenadas globais e `surfaceStart` evitam reiniciar o padrão a cada bloco. O topo usa `u = distânciaSobreSuperfície / 2,9` e `v = z / 4`. Ao descartar um trecho, `destroyChunk()` remove a malha e libera geometria, texturas e materiais. A derivação das faces e das UVs está em [montagem-chunks.md](montagem-chunks.md).
 
 ## Cena, luzes e animações
 
-`SceneView` mantém uma cena, um `WebGLRenderer` ligado ao canvas e duas `PerspectiveCamera`: lateral e oblíqua. `switchCamera()` alterna entre elas. `resize()` atualiza proporção, matriz de projeção e tamanho do renderer. `sync()` move câmeras e luzes conforme o X do Sonic e a altura do terreno. `SceneLighting` adiciona luz ambiente, luz direcional principal com sombras e luz direcional de preenchimento. A skybox atual é uma imagem temporária em `public/assets/`.
+`SceneView` mantém uma cena, um `WebGLRenderer` ligado ao canvas e duas `PerspectiveCamera`: lateral e oblíqua. `switchCamera()` alterna entre elas. `resize()` atualiza proporção, matriz de projeção e tamanho do renderer. `sync()` move câmeras e luzes conforme o X do Sonic e a altura do terreno. `SceneLighting` adiciona uma `HemisphereLight` (céu claro por cima, verde refletido pela grama por baixo) e um sol direcional quente com sombras; os valores ficam em `LIGHTING`. A seção "Cores" de [`fundo-procedural.md`](fundo-procedural.md) explica a paleta e o azul do Sonic. O fundo é procedural e low poly (`rendering/background/Backdrop.js`), sem imagens: `SkyDome` (gradiente em shader, centrado na câmera), `CloudLayer` (nuvens de icosaedros), duas `RidgeLayer` distantes (montanhas e colinas facetadas, com sombreamento e névoa gravados nas cores dos vértices), `WaterPlane` (também na frente e sob a pista) e três `MesaLayer` de platôs com árvores low poly — a mais distante, de ilhas grandes, dá relevo ao horizonte. A água é um `ShaderMaterial`: ondas animadas calculadas na posição do mundo (a malha anda de 3 em 3 u para os vértices não deslizarem), facetas sombreadas pela normal de cada triângulo, reflexos horizontais de bordas duras que cintilam e derivam, e espuma branca ao longo das laterais da pista e em anel na base de cada platô. Os platôs acompanham a altura da água para a espuma ficar sempre na linha d'água. O passo a passo da construção e dos shaders está em [`fundo-procedural.md`](fundo-procedural.md). Os platôs e árvores de cada tile são fundidos por material, e todos os anéis usam uma única `InstancedMesh`; os números e as regras de desempenho estão em [performance.md](performance.md). Os platôs usam os mesmos materiais da pista (`getTerrainMaterials()`: terra xadrez, grama listrada e aba de grama), então o fundo repete o estilo do chão. Cada fileira repete sem emenda a cada `width` unidades e acompanha a câmera em X e a altura do terreno em Y; as distâncias reais geram o paralaxe. A cena tem névoa (`THREE.Fog`, 110–430 u) na cor do horizonte, que desbota platôs e o fim da pista na câmera oblíqua. `sync()` recebe o `dt` para a deriva das nuvens e `render()` posiciona o fundo para a câmera ativa.
 
-Os modelos de Sonic e BuzzBomber são carregados por fábricas assíncronas antes de construir `Entity`. `SonicModel` usa `AnimationMixer` e escolhe `Spin` no ar ou enquanto Espaço está pressionado, `Brake` durante frenagem, `Idle` parado, `Walk` abaixo de 20 u/s e `Jog` a partir de 20 u/s. `Brake` repete em loop até a frenagem terminar. As ações trocam com `fadeOut`/`fadeIn` de 0,15 s. `Walk` e `Jog` aceleram a reprodução com a velocidade; `Spin` usa a velocidade total com um ritmo mínimo. A orientação muda apenas quando o sinal da velocidade X muda. Uma pequena elevação visual compensa o deslocamento vertical da animação de `Spin`.
+A terra de cada chunk desce `Chunk.soilDepth` (60 u, abaixo da água), para a câmera oblíqua não ver vazio sob a pista. No início do primeiro chunk ativo há um penhasco (`StartCliffModel`) com o mesmo xadrez e grama, 7 u acima da pista — mais alto que o pulo do Sonic (~4 u). `TerrainModel` o reposiciona quando os chunks são reciclados, e `Level` usa a face dele como limite: `setMinX(chunks[0].initialX + metade da largura do Sonic)`.
+
+Os modelos de Sonic e BuzzBomber são carregados por fábricas assíncronas antes de construir `Entity`. `SonicModel` usa `AnimationMixer` e escolhe um estado: `Spin` no ar ou enquanto Espaço está pressionado, `Brake` durante frenagem, `Crouch`/`LookUp` parado com S/W, `Idle` parado e, em movimento, a locomoção. Na locomoção, `Walk` e `Jog` mantêm a mesma fase normalizada. `Walk` vale abaixo de 20 u/s; em 20 u/s inicia uma transição de 0,15 s para `Jog`. O ritmo de reprodução usa a velocidade dos pés de cada clipe a 1× (5 e 4,75 u/s, medidas no modelo escalado), com frequência comum durante a transição. As trocas de estado usam crossfade linear de 0,15 s com pesos normalizados, para o mixer nunca misturar a pose de repouso. `Brake` repete em loop até a frenagem terminar; `Spin` usa a velocidade total com um ritmo mínimo. A orientação muda apenas quando o sinal da velocidade X muda. Uma pequena elevação visual compensa o deslocamento vertical da animação de `Spin`. Parado com `S` ou `W`, o Sonic toca `Crouch` ou `LookUp` (`Sonic.isCrouching()`/`isLookingUp()`), com as mesmas transições das outras animações. Como o GLB não tem essas poses, os dois clipes são gerados por `npm run bake:poses` (`scripts/bake-sonic-poses.js`) e gravados em `src/game/rendering/entities/sonicPoseClips.js`. O script parte do primeiro quadro do `Idle`, endireita quadril, tórax e cabeça (o rig vem torcido) e usa IK (`scripts/sonic-poses/SonicPoseSolver.js`), com o joelho tratado como dobradiça no X local, como nas animações do GLB: no agachamento, pés sob o quadril recuado, canelas inclinadas e joelhos à frente, tronco e cabeça curvados e palmas nas laterais da cabeça, fora da malha (os braços não alcançam o topo); olhando para cima, cabeça inclinada para trás e punhos na cintura. Para ajustar uma pose, altere `POSES` no solver e rode o bake de novo; o jogo não executa a IK.
+
+Os hazards são gerados até 140 unidades à frente do jogador. A distância é maior que a área visível da câmera oblíqua, evitando que inimigos e espinhos apareçam no meio da tela.
 
 ## Estado atual, testes e pontos de extensão
 
-`Game.state` percorre `menu`, `playing`, `paused`, `win` e `lose`. A vitória ocorre ao cruzar `finishX` (1000 m); a derrota ocorre quando o Sonic encosta em um perigo sem saldo de anéis. O menu de pausa congela a partida e mostra os controles e botões de continuar/reiniciar. As telas de vitória e derrota exibem distância, tempo, **anéis carregados / total coletado** e, na vitória, a nota.
+`Game.state` percorre `menu`, `playing`, `paused`, `win` e `lose`. A vitória ocorre ao cruzar `finishX` (1000 m); a derrota ocorre quando o Sonic encosta em um perigo sem saldo de anéis. O menu de pausa congela a partida e mostra os controles, botões de continuar/reiniciar e mute de áudio. As telas de vitória e derrota exibem distância, **tempo**, **anéis carregados / total coletado** e, na vitória, a nota. O cronômetro usa `Game.elapsedTime`, que só avança durante `playing`.
+
+O áudio fica em `AudioManager`, que estende `GameAudio`: efeitos e trilha chiptune continuam sintetizados por padrão, e o manifesto opcional permite trocar sons por MP3 próprios/licenciados. O volume e o mute do menu são persistidos em `localStorage`; detalhes em [audio.md](audio.md).
 
 O HUD foi simplificado para distância, velocidade e anéis; o título do jogo não aparece durante a partida. A interface usa Bungee e Chakra Petch, registradas em [font-credits.md](font-credits.md), e os créditos de modelos ficam em [model-credits.md](model-credits.md).
 

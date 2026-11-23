@@ -6,6 +6,9 @@ export class Terrain {
     "ramp_up":   chunkStrategies.rampUp,
     "ramp_down": chunkStrategies.rampDown,
   }
+  static INITIAL_CHUNKS = 8;
+  // Mantém três chunks atrás do jogador para permitir voltar na fase.
+  static RECYCLE_INDEX = 4;
 
   constructor(startPosX) {
     this.startPosX = startPosX;
@@ -21,7 +24,7 @@ export class Terrain {
   
     let surfaceStart = this.startPosX - 10;
     let baseY        = 0;
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < Terrain.INITIAL_CHUNKS; i++) {
       const startX = (this.startPosX - 10) + i * Chunk.length;
       const randomChunkType = () => {
         const keysArray = Object.keys(Terrain.CHUNK_TYPES);
@@ -98,7 +101,7 @@ export class Terrain {
 
   update(x) {
     const added = [];
-    while (x >= this.chunks[2].initialX) {
+    while (x >= this.chunks[Terrain.RECYCLE_INDEX].initialX) {
       added.push(this._appendNewChunk());
       this._destroyFirstChunk();
     }

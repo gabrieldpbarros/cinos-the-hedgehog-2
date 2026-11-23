@@ -16,7 +16,8 @@ export const chunkStrategies = {
 export class Chunk {
   static length    = 40;   // X 
   static depth     = 10;   // Z
-  static soilDepth = 3;    // Y (Ytop - Ybottom = soilDepth)
+  // Profundidade visível da terra: vai bem abaixo da água para a câmera oblíqua não ver vazio.
+  static soilDepth = 60;   // Y (Ytop - Ybottom = soilDepth)
   static theta     = 0.05;
 
   constructor(

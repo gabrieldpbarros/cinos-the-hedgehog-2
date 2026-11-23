@@ -5,9 +5,10 @@ Sistema integrado à `main` junto com anéis, pausa, chegada, pontuação e rein
 ## Geração
 
 - A fase mantém o Buzz Bomber inicial em X=5, usado para demonstrar a perda de anéis.
-- Depois disso, o `Level` gera inimigos e espinhos à frente do jogador, começando em X=14, com espaçamento de 10 a 20 unidades e até 45 unidades de antecedência.
+- Depois disso, o `Level` gera inimigos e espinhos à frente do jogador, começando em X=14, com espaçamento de 10 a 20 unidades e até 140 unidades de antecedência. A distância maior evita que apareçam no meio da tela na segunda câmera.
 - Inimigos voam entre 0,8 e 3,2 unidades acima do terreno; espinhos ficam apoiados na superfície.
 - A geração para na linha de chegada e os elementos que ficam para trás do primeiro chunk ativo são removidos da lógica e da cena.
+- Antes de confirmar um espinho ou inimigo, o `Level` compara sua AABB com os anéis estáticos ativos; se houver sobreposição, o hazard é descartado. A geração de anéis também ignora posições ocupadas por hazards já existentes.
 - O sorteio usa `Math.random` por padrão e pode ser injetado no construtor para testes determinísticos.
 
 ## Regras de contato
@@ -23,7 +24,7 @@ Os espinhos são um modelo procedural (`src/game/rendering/entities/ObstacleMode
 
 ## Verificações
 
-- `npm test`: 48 testes.
+- `npm test`: 68 testes.
 - `npx eslint src tests`: sem erros.
 - `npm run build`: passa com base `/cinos-the-hedgehog-2/`.
 - Navegador: geração inicial mista, derrota de inimigo, dano com anéis, derrota sem anéis, remoção de hazards atrasados e vitória em 1000 m.

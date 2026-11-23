@@ -7,6 +7,7 @@ import { Level } from '../src/game/Level.js';
 import { Terrain } from '../src/game/logic/terrain/Terrain.js';
 import { Chunk, chunkStrategies } from '../src/game/logic/terrain/Chunk.js';
 import { RingModel } from '../src/game/rendering/entities/RingModel.js';
+import { RingInstances } from '../src/game/rendering/entities/RingInstances.js';
 import { EntityLogic } from '../src/game/logic/entities/EntityLogic.js';
 import { Ring, RING } from '../src/game/logic/entities/Ring.js';
 import { Sonic } from '../src/game/logic/entities/Sonic.js';
@@ -50,6 +51,37 @@ test('real ring asset is centered, scaled and cloned without rotating the AABB',
   assert.deepEqual(a.hitboxHelper.box.getSize(new THREE.Vector3()).toArray(), [0.6, 0.6, 0.8]);
 });
 
+test('all rings share one instanced mesh while keeping their own transforms', () => {
+  const scene = new THREE.Scene();
+  const instances = new RingInstances(scene, 8);
+  const makeRing = (x) => new Entity(
+    new Ring(x, 4, `instances:${x}`, null),
+    new RingModel(template),
+  );
+  const first = makeRing(1);
+  const second = makeRing(2);
+
+  assert.equal(instances.add(first), true);
+  assert.equal(instances.add(second), true);
+  instances.update();
+
+  assert.equal(instances.mesh.isInstancedMesh, true);
+  assert.equal(instances.mesh.count, 2);
+  assert.equal(instances.mesh.castShadow, true);
+  assert.equal(first.model.model.visible, false, 'the source mesh is replaced by the instance');
+  assert.equal(first.getModel3D().getObject3D().position.x, 1);
+  const matrices = [new THREE.Matrix4(), new THREE.Matrix4()];
+  instances.mesh.getMatrixAt(0, matrices[0]);
+  instances.mesh.getMatrixAt(1, matrices[1]);
+  assert.notDeepEqual(matrices[0].elements, matrices[1].elements);
+
+  assert.equal(instances.remove(first), true);
+  instances.update();
+  assert.equal(instances.mesh.count, 1);
+  instances.dispose();
+  assert.equal(instances.mesh, null);
+});
+
 function playableLevel() {
   const level = makeLevel();
   level.terrain.update = () => [];
@@ -78,9 +110,26 @@ test('collection precedes damage in the same update, one impact consumes balance
   assert.equal(level.sonic.logic.invulnerabilityRemaining, 2);
   const game = new Game(null, null);
   game.level = level;
-  game.elapsedTime = 6;
+  game.elapsedTime = 1; // 1 anel em 1 s = 60 por minuto, o mínimo para A
   assert.equal(game.getResults().rings, 1);
   assert.equal(game.getResults().grade, 'A');
+});
+
+test('grade follows rings per minute: A 60, B 50, C 40, D 25, E 15, otherwise F', () => {
+  const game = new Game(null, null);
+  game.elapsedTime = 60;
+  const gradeFor = (rings) => {
+    game.level = { ringsCollected: rings };
+    return game.getResults().grade;
+  };
+  for (const [rings, grade] of [
+    [60, 'A'], [59, 'B'], [50, 'B'], [49, 'C'], [40, 'C'], [39, 'D'],
+    [25, 'D'], [24, 'E'], [15, 'E'], [14, 'F'], [9, 'F'], [0, 'F'],
+  ]) {
+    assert.equal(gradeFor(rings), grade, `${rings} rings in a minute`);
+  }
+  game.elapsedTime = 0;
+  assert.equal(gradeFor(5), 'F', 'no time elapsed yet');
 });
 
 test('zero balance loses, protected contact survives, and invulnerability ignores all common contact', () => {
@@ -262,6 +311,22 @@ test('ring layout follows all terrain types, precedes enemy, and stays bounded o
     level.terrain.chunks.push(new Chunk(70, strategy, 1));
     assert.ok(level.syncRingChunks().added.every((r) => r.hitboxVisible));
   }
+});
+
+test('ring layout skips positions occupied by hazards', () => {
+  const level = makeLevel();
+  level.rings = [];
+  level.entities = [];
+  level.ringLayouts.clear();
+
+  const hazardLogic = new EntityLogic(1.2, level.terrain.getHeightAt(1) + 0.7, 0, 'enemy', false);
+  hazardLogic.setHitbox(0.8, 0.8, 0.8);
+  level.enemies.push({ logic: hazardLogic });
+
+  const added = level.syncRingChunks().added;
+  assert.equal(added.length, 8);
+  assert.ok(!added.some((ring) => ring.logic.position.x === 1));
+  assert.ok(added.some((ring) => ring.logic.position.x === 2));
 });
 
 test('swept collection is immediate and unique, persists on chunk refresh, and resets in a new level', () => {

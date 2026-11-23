@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import { TerrainModel } from './terrain/TerrainModel.js';
+import { getTerrainMaterials } from './terrain/GreenHillChunkModel.js';
 import { SceneLighting } from './SceneLighting.js';
+import { Backdrop } from './background/Backdrop.js';
+import { RingInstances } from './entities/RingInstances.js';
 
 export class SceneView {
   constructor(canvas) {
@@ -18,22 +21,18 @@ export class SceneView {
     this.activeCamera = this.cameras.side;
 
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // Em telas Retina, 2x multiplica a área de pixels por quatro. 1,5x preserva a
+    // nitidez sem dobrar o custo de preenchimento da cena.
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
 
     this.lighting = new SceneLighting(this.scene);
 
-    // Skybox
-    this.skybox_loader = new THREE.TextureLoader();
-    this.skybox_texture = this.skybox_loader.load(
-      `${import.meta.env.BASE_URL}assets/temp_skybox.png`,
-      () => {
-        this.skybox_texture.mapping = THREE.EquirectangularReflectionMapping;
-        this.skybox_texture.colorSpace = THREE.SRGBColorSpace;
-        this.scene.background = this.skybox_texture;
-      }
-    );
+    // Céu, água, colinas e nuvens procedurais (low poly)
+    this.backdrop = new Backdrop(this.scene, getTerrainMaterials());
+    this.ringInstances = new RingInstances(this.scene);
+    this.terrainY = 0;
 
     this.resize(window.innerWidth, window.innerHeight);
   }
@@ -85,17 +84,25 @@ export class SceneView {
   }
 
   drawEntity(entity) {
+    if (entity.logic?.type === 'ring' && this.ringInstances.add(entity)) return;
+
     const model = entity.getModel3D().getObject3D();
+    // Projéteis não entram no shadow map. Anéis normalmente são instanciados, mas
+    // um anel especial que caia no caminho individual também deve projetar sombra.
+    const castsShadow = entity.logic?.type !== 'projectile';
     model.traverse((object) => {
-      if (object.isMesh) {
-        object.castShadow = true;
-        object.receiveShadow = true;
-      }
+      if (!object.isMesh) return;
+      object.castShadow = castsShadow;
+      object.receiveShadow = true;
     });
     this.scene.add(model);
   }
 
   removeEntity(entity) {
+    if (entity.logic?.type === 'ring' && this.ringInstances.remove(entity)) {
+      entity.model.dispose?.();
+      return;
+    }
     entity.getModel3D().getObject3D().removeFromParent();
     entity.model.dispose?.();
   }
@@ -115,7 +122,7 @@ export class SceneView {
         : this.cameras.side;
   }
 
-  sync(playerPosition, terrainY) {
+  sync(playerPosition, terrainY, dt = 0) {
     const { x } = playerPosition;
     this.cameras.side.position.set(x, terrainY + 4.5, 12);
     this.cameras.side.lookAt(x, terrainY + 1, 0);
@@ -123,9 +130,13 @@ export class SceneView {
     this.cameras.oneQuarter.lookAt(x, terrainY + 1, 0);
 
     this.lighting.followTerrain(x, terrainY);
+    this.terrainY = terrainY;
+    this.ringInstances.update();
+    this.backdrop.advance(dt);
   }
 
   render() {
+    this.backdrop.follow(this.activeCamera, this.terrainY);
     this.renderer.render(this.scene, this.activeCamera);
   }
 }

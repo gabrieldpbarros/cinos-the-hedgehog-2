@@ -7,6 +7,7 @@ import { EntityLogic } from '../src/game/logic/entities/EntityLogic.js';
 import { Entity } from '../src/game/entities/Entity.js';
 import { EntityModel } from '../src/game/rendering/entities/EntityModel.js';
 import { createObstacleModel } from '../src/game/rendering/entities/ObstacleModel.js';
+import { RING } from '../src/game/logic/entities/Ring.js';
 
 function makeLevel() {
   const level = new Level({ isDown: () => false }, 1000, { spawnHazards: false });
@@ -51,6 +52,7 @@ function makeHazard(level, kind, x, y) {
 test('spawnAhead chooses enemies/obstacles at deterministic gaps and stops at the finish', async () => {
   const level = makeLevel();
   level.spawnHazards = true;
+  level.spawnAheadDistance = 45;
   level.terrain.getHeightAt = () => 2;
   level.nextSpawnX = 14;
   const rolls = [0, 0.5, 0.5, 0.5, 0.9, 0.5];
@@ -83,6 +85,24 @@ test('spawnAhead never places hazards after the finish line', async () => {
 
   assert.ok(spawned.length > 0);
   assert.ok(spawned.every((x) => x < level.finishX));
+});
+
+test('obstacle spawn skips a position occupied by a static ring', () => {
+  const level = makeLevel();
+  level.rings.push({
+    logic: {
+      active: true,
+      scattered: false,
+      getPosition: () => ({ x: 14, y: 0.7, z: 0 }),
+      hitboxDim: { length: RING.hitbox, heigth: RING.hitbox, depth: RING.depth },
+    },
+  });
+
+  level.spawnObstacle(14, 0);
+
+  assert.equal(level.obstacles.length, 0);
+  assert.equal(level.spawnedEntities.length, 0);
+  assert.equal(level.entities.length, 0);
 });
 
 test('spinning into an enemy defeats it and bounces Sonic', () => {
@@ -148,4 +168,11 @@ test('obstacle model is procedural, grounded and wider at the base than the spik
   assert.ok(dim.height > 1);
   assert.ok(dim.depth > 1);
   assert.ok(Math.abs(dim.centerPos.y - 0.05) < 1e-6);
+
+  // Base and spikes are baked into one geometry/material shared by every obstacle.
+  const other = createObstacleModel();
+  assert.equal(model.model.geometry, other.model.geometry);
+  assert.equal(model.model.material, other.model.material);
+  assert.equal(model.model.material.vertexColors, true);
+  assert.equal(model.model.geometry.attributes.color.count, model.model.geometry.attributes.position.count);
 });

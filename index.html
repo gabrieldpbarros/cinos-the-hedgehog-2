@@ -133,6 +133,27 @@
             font-size: 11px;
         }
 
+        #debug {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            z-index: 3;
+            padding: 5px 8px;
+            border: 1px solid var(--line-soft);
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.5);
+            color: var(--muted);
+            font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+            font-size: 10px;
+            line-height: 1.4;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        #debug[hidden] {
+            display: none;
+        }
+
         .hud-hint {
             position: absolute;
             left: 14px;
@@ -281,6 +302,36 @@
             color: var(--muted);
             font-style: normal;
             font-size: 9px;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 18px;
+            padding: 12px 0;
+            border-top: 1px solid var(--line-soft);
+            border-bottom: 1px solid var(--line-soft);
+        }
+
+        .volume-control label {
+            color: #dce4eb;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .volume-control input[type="range"] {
+            flex: 1;
+            min-width: 0;
+            accent-color: var(--gold);
+        }
+
+        .volume-control output {
+            min-width: 3.2em;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 600;
+            text-align: right;
         }
 
         .panel-actions {
@@ -463,7 +514,14 @@
                 <span class="hud-label">Anéis</span>
                 <strong id="hud-rings">0</strong>
             </div>
+            <span class="hud-sep">·</span>
+            <div class="hud-item time">
+                <span class="hud-label">Tempo</span>
+                <strong id="hud-time">00:00.0</strong>
+            </div>
         </div>
+
+        <div id="debug" hidden></div>
 
         <div class="hud-hint">
             <kbd>P</kbd> pausar <span>·</span> <kbd>C</kbd> câmera
