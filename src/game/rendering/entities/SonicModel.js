@@ -6,19 +6,17 @@ import poseClips from "./sonicPoseClips.js";
 const SPIN_REFERENCE_SPEED = 12;
 const FADE_TIME = 0.15;
 const IDLE_SPEED = 0.01;
-// Estados com um clipe só; "Locomotion" mistura Walk, Jog e Run conforme a velocidade.
+// Estados com um clipe só; "Locomotion" mistura Walk e Jog na troca de marcha.
 const POSE_STATES = ['Idle', 'Spin', 'Brake', 'Crouch', 'LookUp'];
 // Velocidade dos pés (u/s) de cada clipe tocado a 1×, medida no modelo já escalado, e o
 // ritmo máximo de reprodução. Ritmo = velocidade / footSpeed mantém o pé de apoio parado
 // em relação ao chão.
 const GAITS = {
-  Walk: { footSpeed: 5, maxRate: 2.5 },
+  Walk: { footSpeed: 5, maxRate: 4.5 },
   Jog: { footSpeed: 4.75, maxRate: 4.5 },
-  Run: { footSpeed: 3.5, maxRate: 6 },
 };
 const MIN_GAIT_RATE = 0.3;
-const WALK_TO_JOG = [5, 9];
-const JOG_TO_RUN = [13, 17];
+const JOG_START_SPEED = 20;
 
 // O pelo do modelo é um azul-marinho escuro (#15248b; azul linear mediano 0,258).
 // Remapeamos só os texels azuis para um azul de Sonic mais vivo (#1a52f0), mantendo o
@@ -47,11 +45,9 @@ export function boostSonicBlue(material) {
   material.needsUpdate = true;
 }
 
-/** Pesos de Walk, Jog e Run para uma velocidade; somam 1 e mudam suavemente. */
+/** Marcha pretendida para a velocidade atual; a troca visual ocorre em updateGaits. */
 export function gaitWeights(speed) {
-  const jog = THREE.MathUtils.smoothstep(speed, ...WALK_TO_JOG);
-  const run = THREE.MathUtils.smoothstep(speed, ...JOG_TO_RUN);
-  return { Walk: 1 - jog, Jog: jog * (1 - run), Run: run };
+  return speed < JOG_START_SPEED ? { Walk: 1, Jog: 0 } : { Walk: 0, Jog: 1 };
 }
 
 export async function createSonicModel() {
@@ -132,7 +128,7 @@ export class SonicModel extends EntityModel {
 
     const motionSpeed = Math.hypot(speed, logic.getSpeed().y);
     this.spinAction.timeScale = THREE.MathUtils.clamp(motionSpeed / SPIN_REFERENCE_SPEED, 1, 2);
-    this.updateGaits(speed);
+    this.updateGaits(speed, dt);
     this.applyWeights();
     this.mixer.update(dt);
 
@@ -150,7 +146,7 @@ export class SonicModel extends EntityModel {
     if (state !== 'Locomotion') {
       this.actions.get(state).time = 0;
     } else if (this.stateWeights.get('Locomotion') === 0) {
-      // Walk, Jog e Run começam juntos e avançam na mesma fase normalizada.
+      // Walk e Jog começam juntos e avançam na mesma fase normalizada.
       for (const name of Object.keys(GAITS)) this.actions.get(name).time = 0;
     }
   }
@@ -166,12 +162,16 @@ export class SonicModel extends EntityModel {
   }
 
   /**
-   * Mistura as marchas pela velocidade e dá a todas a mesma frequência de passo, para os
-   * pés das três ficarem em sincronia. Cada marcha "quer" o ritmo que casa seus pés com o
+   * Mistura as marchas durante a troca e dá a ambas a mesma frequência de passo. Cada
+   * marcha "quer" o ritmo que casa seus pés com o
    * chão; a frequência comum é a média desses ritmos ponderada pelos pesos.
    */
-  updateGaits(speed) {
-    this.gaitWeights = gaitWeights(speed);
+  updateGaits(speed, dt) {
+    const targetJog = gaitWeights(speed).Jog;
+    const jog = THREE.MathUtils.clamp(targetJog,
+      this.gaitWeights.Jog - dt / FADE_TIME,
+      this.gaitWeights.Jog + dt / FADE_TIME);
+    this.gaitWeights = { Walk: 1 - jog, Jog: jog };
     let stepsPerSecond = 0;
     for (const [name, gait] of Object.entries(GAITS)) {
       const rate = THREE.MathUtils.clamp(speed / gait.footSpeed, MIN_GAIT_RATE, gait.maxRate);

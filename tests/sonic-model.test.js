@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { SonicModel, gaitWeights } from '../src/game/rendering/entities/SonicModel.js';
 import poseClips from '../src/game/rendering/entities/sonicPoseClips.js';
 
-const makeClips = () => ['Idle', 'Walk', 'Jog', 'Run', 'Spin', 'Brake', 'Crouch', 'LookUp'].map(
+const makeClips = () => ['Idle', 'Walk', 'Jog', 'Spin', 'Brake', 'Crouch', 'LookUp'].map(
   (name) => new THREE.AnimationClip(name, 1, []),
 );
 
@@ -40,12 +40,12 @@ test('Sonic animation follows jump and absolute horizontal speed', () => {
   assert.equal(currentClip(), 'Idle');
   const weight = (name) => model.actions.get(name).getEffectiveWeight();
 
-  // Top speed: Run only, legs matched to the ground (3.5 u/s at 1x).
+  // A partir de 20 u/s, Jog substitui Walk sem depender de boost.
   logic.speed.x = -20;
   for (let i = 0; i < 4; i++) model.update(0.05, logic);
-  assert.equal(currentClip(), 'Run');
-  assert.ok(Math.abs(weight('Run') - 1) < 1e-9);
-  assert.ok(Math.abs(model.activeAction.timeScale - 20 / 3.5) < 1e-9);
+  assert.equal(currentClip(), 'Jog');
+  assert.ok(Math.abs(weight('Jog') - 1) < 1e-9);
+  assert.ok(Math.abs(model.activeAction.timeScale - 20 / 4.75) < 1e-9);
 
   // Walking: rate = speed / foot speed (5 u/s at 1x), so the planted foot does not slide.
   logic.speed.x = 3;
@@ -53,19 +53,19 @@ test('Sonic animation follows jump and absolute horizontal speed', () => {
   assert.equal(currentClip(), 'Walk');
   assert.ok(Math.abs(model.activeAction.timeScale - 3 / 5) < 1e-9);
 
-  // Between 5 and 9 u/s Walk and Jog play together, in the same normalized phase.
+  // Abaixo de 20 u/s, só Walk tem peso; os clipes mantêm a mesma fase.
   logic.speed.x = 7;
   model.update(0.05, logic);
-  assert.ok(Math.abs(weight('Walk') - 0.5) < 1e-9);
-  assert.ok(Math.abs(weight('Jog') - 0.5) < 1e-9);
+  assert.equal(weight('Walk'), 1);
+  assert.equal(weight('Jog'), 0);
   const phase = (name) => model.actions.get(name).time / model.clips.get(name).duration;
   assert.ok(Math.abs(phase('Walk') - phase('Jog')) < 1e-9);
   assert.equal(model.actions.get('Walk').timeScale, model.actions.get('Jog').timeScale);
 
   logic.speed.x = 25;
   logic.currentActions.add('BOOST');
-  model.update(0.05, logic);
-  assert.equal(currentClip(), 'Run');
+  for (let i = 0; i < 4; i++) model.update(0.05, logic);
+  assert.equal(currentClip(), 'Jog');
   logic.braking = true;
   model.update(0.05, logic);
   assert.equal(currentClip(), 'Brake');
@@ -98,19 +98,22 @@ test('Sonic animation follows jump and absolute horizontal speed', () => {
   assert.ok(Math.abs(model.model.position.y - baseY) < 1e-9);
 });
 
-test('gait weights blend smoothly from walk to jog to run and always sum to 1', () => {
-  let previous = gaitWeights(0);
-  assert.deepEqual(previous, { Walk: 1, Jog: 0, Run: 0 });
-  for (let speed = 0.25; speed <= 22; speed += 0.25) {
-    const weights = gaitWeights(speed);
-    assert.ok(Math.abs(weights.Walk + weights.Jog + weights.Run - 1) < 1e-9);
-    for (const name of ['Walk', 'Jog', 'Run']) {
-      assert.ok(Math.abs(weights[name] - previous[name]) < 0.1, `${name} changes gradually at ${speed}`);
-    }
-    previous = weights;
-  }
-  assert.deepEqual(gaitWeights(11), { Walk: 0, Jog: 1, Run: 0 });
-  assert.equal(gaitWeights(20).Run, 1);
+test('Jog starts at 20 u/s and fades in while Walk fades out', () => {
+  assert.deepEqual(gaitWeights(19.99), { Walk: 1, Jog: 0 });
+  assert.deepEqual(gaitWeights(20), { Walk: 0, Jog: 1 });
+
+  const scene = new THREE.Group();
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshStandardMaterial()));
+  const model = new SonicModel(scene, makeClips());
+  const logic = makeLogic([], 19);
+  model.update(0.05, logic);
+  logic.speed.x = 20;
+  model.update(0.05, logic);
+  assert.ok(model.gaitWeights.Jog > 0 && model.gaitWeights.Jog < 1);
+  model.update(0.05, logic);
+  model.update(0.05, logic);
+  assert.equal(model.gaitWeights.Jog, 1);
+  assert.ok(Math.abs(model.actions.get('Walk').timeScale - model.actions.get('Jog').timeScale) < 1e-9);
 });
 
 test('state changes crossfade without ever dropping to the rest pose', () => {
