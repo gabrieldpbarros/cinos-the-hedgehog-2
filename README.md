@@ -115,7 +115,3 @@ Os detalhes e os textos integrais das licenças estão em [`docs/model-credits.m
 - [Montagem dos chunks](docs/montagem-chunks.md)
 - [Fundo procedural, água e shaders](docs/fundo-procedural.md)
 - [Guia de Three.js](docs/threejs-guide.md)
-
-### Demonstração
-
-O jogo está jogável no link público acima. O vídeo de demonstração da entrega deve ser vinculado nesta seção antes da submissão.
