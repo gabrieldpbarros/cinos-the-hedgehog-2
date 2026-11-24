@@ -7,6 +7,9 @@ import { Fish } from '../src/game/logic/entities/Fish.js';
 import { createFishModel } from '../src/game/rendering/entities/FishModel.js';
 import { BridgeChunkModel, FISH_HOLE_X, FISH_HOLE_Z } from '../src/game/rendering/terrain/BridgeChunkModel.js';
 
+globalThis.ProgressEvent ??= class {};
+globalThis.createImageBitmap ??= async () => ({});
+
 test('o peixe sobe até a altura calibrada e volta à base', () => {
   const startY = -FISH.spawnDepth;
   const fish = new Fish(0, startY, 0);
@@ -23,6 +26,20 @@ test('o peixe sobe até a altura calibrada e volta à base', () => {
   const expectedPeak = startY + FISH.jumpSpeed ** 2 / (2 * Math.abs(CONFIG.gravity));
   assert.ok(Math.abs(maxY - expectedPeak) < 0.05, `pico ${maxY} diverge de ${expectedPeak}`);
   assert.ok(touchedBottom, 'o peixe deve retornar à base para repetir o salto');
+});
+
+test('o salto começa na água e ultrapassa o tabuleiro', () => {
+  const startY = -FISH.spawnDepth;
+  const fish = new Fish(0, startY, 0);
+  let maxY = startY;
+
+  for (let i = 0; i < 4000; i++) {
+    fish.update(1 / 600);
+    maxY = Math.max(maxY, fish.position.y);
+  }
+
+  assert.ok(Math.abs(startY - (WATER_Y - 0.5)) < 1e-9, 'o peixe deve começar na linha d’água');
+  assert.ok(maxY > 1, `pico ${maxY} deve passar acima do tabuleiro`);
 });
 
 test('a ponte tem alçapões alinhados com os peixes e pilares até a água', () => {
@@ -43,8 +60,12 @@ test('a ponte tem alçapões alinhados com os peixes e pilares até a água', ()
   assert.ok(box.min.y <= WATER_Y - 0.4, `pilares em ${box.min.y} não chegam à água em ${WATER_Y}`);
 });
 
-test('o peixe cabe no alçapão', () => {
-  const { length, depth } = createFishModel().getObjectDim();
-  assert.ok(depth < 0.64, `profundidade ${depth} não cabe no alçapão`);
+test('o peixe cabe no alçapão', async () => {
+  const url = new URL(
+    '../public/model-imports/chopper-sonic-generations-ripped/source/chopper.glb',
+    import.meta.url,
+  ).href;
+  const { length, depth } = (await createFishModel({ url })).getObjectDim();
+  assert.ok(depth < 1.22, `profundidade ${depth} não cabe no alçapão`);
   assert.ok(length < 1.2, `comprimento ${length} não cabe no alçapão`);
 });

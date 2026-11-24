@@ -40,7 +40,7 @@ A implementacao segue o mesmo padrao dos outros chunks: estrategia de relevo, re
 - A classe `Fish` fica em `src/game/logic/entities/Fish.js`.
 - O peixe e um inimigo com gravidade propria e movimento vertical ciclico.
 - `FISH.jumpSpeed` e `FISH.spawnDepth` ficam em `src/game/constants.js`, junto com os outros ajustes.
-- Ele comeca `FISH.spawnDepth` unidades abaixo da ponte e salta ate passar acima dela.
+- Ele comeca logo abaixo da linha d'agua (`WATER_Y`) e salta ate passar acima do tabuleiro.
 - O `Level` cria peixes apenas em chunks do tipo `bridge`.
 - Os peixes sao gerados nos offsets definidos por `FISH_HOLE_X` e na faixa `FISH_HOLE_Z`.
 - Cada peixe e tratado como hazard: pode ser derrotado ao pular ou girar sobre ele, e causa dano ao toque.
@@ -50,11 +50,12 @@ A implementacao segue o mesmo padrao dos outros chunks: estrategia de relevo, re
 ### Visual
 
 - O modelo fica em `src/game/rendering/entities/FishModel.js`.
-- O peixe e low poly facetado: corpo com secoes transversais e duas faixas creme, cauda bifurcada com pivô, nadadeira dorsal e nadadeira pelvica, olhos com esclera e pupila.
-- A cor verde-azulada tropical contrasta com a madeira marrom da ponte.
-- O modelo e escalado para 0.65 e fica na vertical, para indicar o salto de baixo para cima.
-- A cauda anima durante o salto.
-- O modelo e clonado a partir de um template compartilhado. O `dispose()` libera apenas a caixa de depuracao, que e exclusiva de cada instancia.
+- O peixe usa o GLB do Chopper de Sonic Generations, creditado em `index.html` e em `public/model-imports/chopper-sonic-generations-ripped/` (CC BY 4.0).
+- O GLB e carregado de forma assincrona com `GLTFLoader`, uma vez, e clonado para cada peixe.
+- O modelo e inclinado para ficar na vertical, com a cabeca para cima, e escalado para caber no alcapao.
+- O GLB nao traz animacoes; o codigo aplica um leve balanceio para sugerir o movimento da cauda e um morph target que abre a boca devagar, segura e fecha com um estalo, como no Chopper original.
+- O peixe foi ampliado e o alcapao do tabuleiro foi alargado para acomodá-lo.
+- O `dispose()` libera apenas a caixa de depuracao, exclusiva de cada instancia.
 
 ## Geracao no Level
 

@@ -8,7 +8,7 @@ import { WATER_Y } from '../../constants.js';
 export const FISH_HOLE_X = [8, 20, 32];
 export const FISH_HOLE_Z = 0.1;
 const HOLE_LENGTH = 1.2;
-const HOLE_WIDTH = 0.64;
+const HOLE_WIDTH = 1.22;
 
 let woodMaterial;
 function getWoodMaterial() {

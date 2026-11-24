@@ -17,6 +17,7 @@ export const WATER_Y = -12;
 
 // Ajustes do peixe saltador, reunidos aqui para facilitar a calibração.
 export const FISH = {
-  jumpSpeed: 17.5,
-  spawnDepth: 4, // distância abaixo do tabuleiro onde o peixe começa o salto
+  // O salto começa logo abaixo da água e precisa passar pelo tabuleiro.
+  jumpSpeed: 25,
+  spawnDepth: -WATER_Y + 0.5,
 };
