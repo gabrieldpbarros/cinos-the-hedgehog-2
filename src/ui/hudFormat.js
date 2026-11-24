@@ -21,3 +21,9 @@ export function formatTime(seconds) {
 }
 
 export const formatHudTime = formatTime;
+
+/** Pontuação do HUD: seis dígitos, como nos jogos arcade clássicos. */
+export function formatScore(points) {
+  const value = Number.isFinite(points) ? Math.max(0, Math.floor(points)) : 0;
+  return String(value).padStart(6, '0');
+}

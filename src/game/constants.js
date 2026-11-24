@@ -20,3 +20,26 @@ export const FISH = {
   jumpSpeed: 17.5,
   spawnDepth: 4, // distância abaixo do tabuleiro onde o peixe começa o salto
 };
+
+// Pontuação estilo arcade: anéis valem pontos, derrotas em cadeia dobram o
+// valor e o tempo de conclusão concede um bônus único.
+export const SCORE = {
+  ring: 10,
+  enemyBase: 100,
+  enemyChainWindow: 2, // segundos para manter a cadeia de inimigos
+  timeBonusTiers: [
+    { upTo: 50, points: 5000 },
+    { upTo: 65, points: 3500 },
+    { upTo: 80, points: 2500 },
+    { upTo: 100, points: 1500 },
+    { upTo: 120, points: 800 },
+  ],
+  gradeThresholds: [
+    { min: 8500, grade: 'A' },
+    { min: 6500, grade: 'B' },
+    { min: 4800, grade: 'C' },
+    { min: 3000, grade: 'D' },
+    { min: 1500, grade: 'E' },
+    { min: 0, grade: 'F' },
+  ],
+};

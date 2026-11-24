@@ -124,7 +124,8 @@
             font-weight: 600;
         }
 
-        .hud-item.rings strong {
+        .hud-item.rings strong,
+        .hud-item.score strong {
             color: var(--gold);
         }
 
@@ -437,6 +438,7 @@
             font-weight: 600;
         }
 
+        .result-card.score strong,
         .result-card.grade strong {
             color: var(--gold);
         }
@@ -500,6 +502,11 @@
         <canvas id="canvas" aria-label="Cinos the Hedgehog 2"></canvas>
 
         <div id="hud">
+            <div class="hud-item score">
+                <span class="hud-label">Pontos</span>
+                <strong id="hud-score">000000</strong>
+            </div>
+            <span class="hud-sep">·</span>
             <div class="hud-item">
                 <span class="hud-label">Distância</span>
                 <strong><span id="hud-distance">0.0</span><small>m</small></strong>

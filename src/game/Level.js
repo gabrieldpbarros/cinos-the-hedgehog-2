@@ -11,6 +11,7 @@ import { createObstacleModel } from "./rendering/entities/ObstacleModel.js";
 import { createFishModel } from "./rendering/entities/FishModel.js";
 import { FISH_HOLE_X, FISH_HOLE_Z } from "./rendering/terrain/BridgeChunkModel.js";
 import { FISH } from "./constants.js";
+import { Score } from "./logic/Score.js";
 import { Entity } from "./entities/Entity.js";
 import { Ring, RING } from './logic/entities/Ring.js';
 import { RingModel, loadRingTemplate } from './rendering/entities/RingModel.js';
@@ -74,6 +75,7 @@ export class Level {
     this.finishX = null;
     this.ringsCollected = 0;
     this.ringBalance = 0;
+    this.score = new Score();
     this.rings = [];
     this.ringLayouts = new Map();
     this.bridgeFishLayouts = new Map();
@@ -195,6 +197,7 @@ export class Level {
       ring.logic.collect();
       this.ringBalance = Math.min(999, this.ringBalance + 1);
       this.ringsCollected++;
+      this.score.addRing();
       this.ringLayouts.get(ring.logic.chunkX)?.add(ring.logic.id);
       ring.model.update(0, ring.logic);
       this.audio?.play('ring');
@@ -353,6 +356,7 @@ export class Level {
         // Pular/girar sobre o inimigo o derrota e dá um pequeno impulso.
         this.sonic.logic.speed.y = Math.abs(this.sonic.logic.jumpSpeed) * 0.65;
         this.audio?.play('stomp');
+        this.score.defeatEnemy();
         this.removeHazard(enemy);
         return { added: [], removed: [enemy] };
       }
@@ -370,12 +374,14 @@ export class Level {
     this.audio?.play('hit');
     const previousBalance = this.ringBalance;
     this.ringBalance = 0;
+    this.score.loseRings(previousBalance);
     this.sonic.logic.takeHit(hazard.logic.getPosition().x);
     this.sonic.model.update(0, this.sonic.logic);
     return this.scatterRings(previousBalance);
   }
 
   update(dt) {
+    this.score.tick(dt);
     // O limite esquerdo é o penhasco no início do primeiro chunk; o corpo do Sonic encosta nele.
     this.sonic.logic.setMinX(this.terrain.chunks[0].initialX + this.sonic.logic.hitboxDim.length / 2);
     const wasOnGround = this.sonic.logic.onGround;
