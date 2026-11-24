@@ -2,7 +2,7 @@
 
 ## Visao geral
 
-O jogo agora possui um tipo de chunk chamado `bridge`. Ele representa uma ponte de madeira sobre a agua e pode conter peixes que saltam de baixo para cima, passando por pequenos alcapoes na pista.
+O jogo agora possui um tipo de chunk chamado `bridge`. Ele representa uma ponte de corda sobre a agua e pode conter peixes que saltam de baixo para cima, passando por trás do tabuleiro como nos jogos 2D originais.
 
 A implementacao segue o mesmo padrao dos outros chunks: estrategia de relevo, registro em `Terrain.CHUNK_TYPES`, modelo visual proprio e geracao de entidades pelo `Level`.
 
@@ -22,16 +22,16 @@ A implementacao segue o mesmo padrao dos outros chunks: estrategia de relevo, re
 ### Visual
 
 - O modelo fica em `src/game/rendering/terrain/BridgeChunkModel.js`.
-- A ponte e formada por:
-  - tabuleiro solido de madeira, com uma faixa central continua onde o Sonic corre;
-  - pequenos alcapoes nos pontos definidos por `FISH_HOLE_X`, por onde os peixes saltam;
-  - vigas abaixo do tabuleiro, entre os alcapoes;
-  - guarda-corpos com duas travessas e postes igualmente espaçados nas bordas;
-  - pilares que descem ate a linha d'agua.
-- As cores das tabuas usam `vertexColors`, com tons de madeira. O material compartilhado usa `flatShading` e nao reutiliza a textura da grama.
-- `WATER_Y` fica em `src/game/constants.js` e e usado tanto pelo fundo quanto pelos pilares.
-- As constantes `FISH_HOLE_X` e `FISH_HOLE_Z` definem onde os peixes aparecem e onde existem os alcapoes.
-- O modelo remove a geometria ao ser destruido, como os outros chunks; o material e compartilhado.
+- A ponte e uma passarela de corda sobre a agua: troncos de madeira horizontais e mais grossos, perpendiculares ao caminho, atravessam toda a largura da pista.
+- O tabuleiro tem uma curvatura de 0.75 unidades no centro. `chunkStrategies.bridge.heightAt` segue a mesma curva, entao a colisao do Sonic acompanha os troncos e ele nao parece flutuar.
+- Cordas na altura do tabuleiro atravessam os troncos e os mantem unidos; nao ha guarda-corpos.
+- A ponte e mais estreita que o chunk de terra, com 7 unidades de largura.
+- Postes de madeira com faixas douradas nas duas bordas de cada ponta prendem a ponte as margens, com cordas diagonais ate o tabuleiro. Os postes descem ate a linha d'agua, para sustentar tambem quando dois chunks de ponte se conectam.
+- Um único tronco é omitido em cada ponto de salto, formando um vão estreito apenas largo o suficiente para o peixe. As cordas seguem cobrindo esse vão, então o Sonic tem algo sob os pés ao passar.
+- As cores usam `vertexColors` em tons de madeira e corda, com `flatShading`. O material e compartilhado.
+- `WATER_Y` fica em `src/game/constants.js` e define a linha d'agua usada pelo fundo e pelo salto do peixe.
+- As constantes `FISH_SPAWN_X` e `FISH_SPAWN_Z` definem onde os peixes aparecem.
+- O modelo remove a geometria ao ser destruido, como os outros chunks.
 
 ## Peixe saltador
 
@@ -42,7 +42,7 @@ A implementacao segue o mesmo padrao dos outros chunks: estrategia de relevo, re
 - `FISH.jumpSpeed` e `FISH.spawnDepth` ficam em `src/game/constants.js`, junto com os outros ajustes.
 - Ele comeca logo abaixo da linha d'agua (`WATER_Y`) e salta ate passar acima do tabuleiro.
 - O `Level` cria peixes apenas em chunks do tipo `bridge`.
-- Os peixes sao gerados nos offsets definidos por `FISH_HOLE_X` e na faixa `FISH_HOLE_Z`.
+- Os peixes sao gerados nos offsets definidos por `FISH_SPAWN_X` e na faixa `FISH_SPAWN_Z`.
 - Cada peixe e tratado como hazard: pode ser derrotado ao pular ou girar sobre ele, e causa dano ao toque.
 - O hitbox e local ao peixe, coerente com a posicao dele no espaco; nao ha dano em um plano inteiro.
 - Peixes atras do primeiro chunk ativo sao removidos, como os outros hazards.
@@ -68,5 +68,5 @@ A implementacao segue o mesmo padrao dos outros chunks: estrategia de relevo, re
 ## Testes
 
 - `tests/chunk.test.js` valida reciclagem, quantidade de chunks e compartilhamento de materiais por tipo. A comparacao agrupa por `chunkTypeName` e aceita listas de tamanhos diferentes, porque a ponte so usa madeira.
-- `tests/fish-bridge.test.js` valida o arco do salto, os alcapoes alinhados com os peixes, os pilares ate a agua e o peixe cabendo no alcapao.
+- `tests/fish-bridge.test.js` valida o arco do salto, o tabuleiro contínuo, a curvatura da ponte, os postes ate a agua e as dimensões do peixe.
 - Os comandos usam Bun: `bun test`, `bunx eslint` e `bun run build`.

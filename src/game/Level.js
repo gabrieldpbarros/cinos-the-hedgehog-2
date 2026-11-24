@@ -9,7 +9,7 @@ import { createSonicModel } from "./rendering/entities/SonicModel.js";
 import { createBuzzBomberModel } from "./rendering/entities/BuzzBomberModel.js";
 import { createObstacleModel } from "./rendering/entities/ObstacleModel.js";
 import { createFishModel } from "./rendering/entities/FishModel.js";
-import { FISH_HOLE_X, FISH_HOLE_Z } from "./rendering/terrain/BridgeChunkModel.js";
+import { FISH_SPAWN_X, FISH_SPAWN_Z } from "./rendering/terrain/BridgeChunkModel.js";
 import { FISH } from "./constants.js";
 import { Entity } from "./entities/Entity.js";
 import { Ring, RING } from './logic/entities/Ring.js';
@@ -58,7 +58,7 @@ function makeObstacle(x, groundY) {
   return obstacle;
 }
 
-async function makeFish(x = 0, y = 0, z = FISH_HOLE_Z) {
+async function makeFish(x = 0, y = 0, z = FISH_SPAWN_Z) {
   const fishLogic = new Fish(x, y, z);
   const fishModel = await createFishModel();
   const fish = new Entity(fishLogic, fishModel);
@@ -322,7 +322,7 @@ export class Level {
       if (this.bridgeFishLayouts.has(chunk.initialX)) continue;
       this.bridgeFishLayouts.set(chunk.initialX, new Set());
 
-      for (const offset of FISH_HOLE_X) {
+      for (const offset of FISH_SPAWN_X) {
         const x = chunk.initialX + offset;
         if (x < this.startPosX || x >= this.finishX) continue;
         const groundY = chunk.getHeightAtX(x);

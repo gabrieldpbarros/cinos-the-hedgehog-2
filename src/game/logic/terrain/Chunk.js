@@ -1,3 +1,11 @@
+// Queda da ponte de corda no meio do vão. A superfície de colisão segue a
+// mesma curva do desenho, para o Sonic não parecer suspenso sobre os troncos.
+export const BRIDGE_SAG = 0.75;
+
+export function bridgeSagAt(x, length = 40) {
+  return BRIDGE_SAG * Math.sin((Math.PI * x) / length);
+}
+
 export const chunkStrategies = {
   flat: {
     type: 'flat',
@@ -16,7 +24,7 @@ export const chunkStrategies = {
   },
   bridge: {
     type: 'bridge',
-    heightAt: (_x, baseY) => baseY,
+    heightAt: (_x, baseY) => baseY - bridgeSagAt(_x),
     normalAt: () => ({ x: 0, y: 1, z: 0 })
   }
 };

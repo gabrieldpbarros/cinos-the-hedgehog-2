@@ -5,7 +5,7 @@ import { CONFIG, FISH, WATER_Y } from '../src/game/constants.js';
 import { Chunk, chunkStrategies } from '../src/game/logic/terrain/Chunk.js';
 import { Fish } from '../src/game/logic/entities/Fish.js';
 import { createFishModel } from '../src/game/rendering/entities/FishModel.js';
-import { BridgeChunkModel, FISH_HOLE_X, FISH_HOLE_Z } from '../src/game/rendering/terrain/BridgeChunkModel.js';
+import { BridgeChunkModel, FISH_SPAWN_X, FISH_SPAWN_Z } from '../src/game/rendering/terrain/BridgeChunkModel.js';
 
 globalThis.ProgressEvent ??= class {};
 globalThis.createImageBitmap ??= async () => ({});
@@ -42,7 +42,14 @@ test('o salto começa na água e ultrapassa o tabuleiro', () => {
   assert.ok(maxY > 1, `pico ${maxY} deve passar acima do tabuleiro`);
 });
 
-test('a ponte tem alçapões alinhados com os peixes e pilares até a água', () => {
+test('a superfície da ponte segue a curvatura do tabuleiro', () => {
+  const chunk = new Chunk(0, chunkStrategies.bridge, 0);
+  assert.equal(chunk.getHeightAtX(0), 0);
+  assert.ok(chunk.getHeightAtX(20) < -0.4, 'o meio da ponte deve estar mais baixo');
+  assert.ok(Math.abs(chunk.getHeightAtX(40)) < 1e-9, 'as pontas permanecem na altura original');
+});
+
+test('a ponte tem troncos contínuos nos pontos de salto', () => {
   const chunk = new Chunk(0, chunkStrategies.bridge, 0);
   const mesh = new BridgeChunkModel(chunk).getChunkModel();
   mesh.updateMatrixWorld(true);
@@ -50,17 +57,19 @@ test('a ponte tem alçapões alinhados com os peixes e pilares até a água', ()
   const ray = new THREE.Raycaster();
   const down = new THREE.Vector3(0, -1, 0);
 
-  ray.set(new THREE.Vector3(FISH_HOLE_X[0], 5, FISH_HOLE_Z), down);
-  assert.equal(ray.intersectObject(mesh).length, 0, 'deve haver um alçapão no ponto do peixe');
+  ray.set(new THREE.Vector3(FISH_SPAWN_X[0], 5, FISH_SPAWN_Z), down);
+  assert.equal(ray.intersectObject(mesh).length, 0, 'deve haver um vão de um tronco no ponto do peixe');
 
-  ray.set(new THREE.Vector3(2, 5, FISH_HOLE_Z), down);
-  assert.ok(ray.intersectObject(mesh).length > 0, 'o tabuleiro deve ser sólido entre alçapões');
+  ray.set(new THREE.Vector3(2.4, 5, FISH_SPAWN_Z), down);
+  assert.ok(ray.intersectObject(mesh).length > 0, 'deve haver um tronco entre os pontos de salto');
 
   const box = new THREE.Box3().setFromObject(mesh);
-  assert.ok(box.min.y <= WATER_Y - 0.4, `pilares em ${box.min.y} não chegam à água em ${WATER_Y}`);
+  assert.ok(box.max.y >= 1.5 && box.max.y <= 2.2, `os postes de amarração devem ficar acima do tabuleiro, não em ${box.max.y}`);
+  assert.ok(box.min.y < -0.3, 'o tabuleiro deve ter leve curvatura no centro');
+  assert.ok(box.min.y <= WATER_Y - 0.4, 'os postes devem descer até a água');
 });
 
-test('o peixe cabe no alçapão', async () => {
+test('o peixe tem dimensões compatíveis com a ponte', async () => {
   const url = new URL(
     '../public/model-imports/chopper-sonic-generations-ripped/source/chopper.glb',
     import.meta.url,
