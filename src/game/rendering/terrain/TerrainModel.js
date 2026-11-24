@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GreenHillChunkModel, getTerrainMaterials } from './GreenHillChunkModel.js';
+import { BridgeChunkModel } from './BridgeChunkModel.js';
 import { StartCliffModel } from './StartCliffModel.js';
 
 export class TerrainModel {
@@ -13,6 +14,7 @@ export class TerrainModel {
   }
 
   _createChunkModel(chunk) {
+    if (chunk?.chunkTypeName === 'bridge') return new BridgeChunkModel(chunk);
     if (this.model_type == "green_hill") return new GreenHillChunkModel(chunk);
   }
 

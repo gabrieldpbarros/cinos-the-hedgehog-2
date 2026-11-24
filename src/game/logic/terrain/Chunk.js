@@ -1,24 +1,31 @@
 export const chunkStrategies = {
-  flat: { 
+  flat: {
+    type: 'flat',
     heightAt: (_x, baseY) => baseY,
     normalAt: () => ({ x: 0, y: 1, z: 0 })
   },
-  rampUp: { 
+  rampUp: {
+    type: 'ramp_up',
     heightAt: (_x, baseY, theta) => (_x * Math.tan(theta)) + baseY,
     normalAt: (_x, theta) => ({ x: -Math.sin(theta), y: Math.cos(theta), z: 0 })
   },
   rampDown: {
+    type: 'ramp_down',
     heightAt: (_x, baseY, theta) => baseY - _x * Math.tan(theta),
     normalAt: (_x, theta) => ({ x: Math.sin(theta), y: Math.cos(theta), z: 0 })
+  },
+  bridge: {
+    type: 'bridge',
+    heightAt: (_x, baseY) => baseY,
+    normalAt: () => ({ x: 0, y: 1, z: 0 })
   }
 };
 
 export class Chunk {
   static length    = 40;   // X 
   static depth     = 10;   // Z
-  // Profundidade visível da terra: vai bem abaixo da água para a câmera oblíqua não ver vazio.
   static soilDepth = 60;   // Y (Ytop - Ybottom = soilDepth)
-  static theta     = 0.05;
+  static theta     = 0.1;
 
   constructor(
     initialX,
@@ -39,6 +46,7 @@ export class Chunk {
   ) {
     this.initialX     = initialX;     // posicao global do inicio do chunk
     this.chunkType    = chunkType;    // tipo do chunk (reto, rampa, curva, ...)
+    this.chunkTypeName = chunkType?.type ?? 'flat';
     this.baseY        = baseY;        // altura da superficie no inicio do chunk
     this.theta        = theta;
     this.surfaceStart = surfaceStart; // comprimento da superficie

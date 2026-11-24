@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { WATER_Y } from '../../constants.js';
 
 // Fundo procedural low poly: céu em gradiente, nuvens, montanhas e colinas distantes, água
 // e duas fileiras de platôs com o mesmo xadrez e grama da pista, com árvores low poly.
@@ -356,7 +357,6 @@ export class CloudLayer {
 }
 
 const lerp = ([min, max], t) => min + (max - min) * t;
-const WATER_Y = -12; // nível da água abaixo da pista
 
 // UV do cilindro em unidades do mundo: xadrez de 4 u na lateral e faixas de 2,9 u no topo.
 function cylinderWorldUVs(geometry, radius, height) {

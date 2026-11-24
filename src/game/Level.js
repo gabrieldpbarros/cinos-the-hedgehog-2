@@ -4,9 +4,13 @@ import { Terrain } from "./logic/terrain/Terrain.js";
 import { Sonic } from "./logic/entities/Sonic.js";
 import { BuzzBomber } from "./logic/entities/BuzzBomber.js";
 import { Obstacle } from "./logic/entities/Obstacle.js";
+import { Fish } from "./logic/entities/Fish.js";
 import { createSonicModel } from "./rendering/entities/SonicModel.js";
 import { createBuzzBomberModel } from "./rendering/entities/BuzzBomberModel.js";
 import { createObstacleModel } from "./rendering/entities/ObstacleModel.js";
+import { createFishModel } from "./rendering/entities/FishModel.js";
+import { FISH_HOLE_X, FISH_HOLE_Z } from "./rendering/terrain/BridgeChunkModel.js";
+import { FISH } from "./constants.js";
 import { Entity } from "./entities/Entity.js";
 import { Ring, RING } from './logic/entities/Ring.js';
 import { RingModel, loadRingTemplate } from './rendering/entities/RingModel.js';
@@ -54,6 +58,15 @@ function makeObstacle(x, groundY) {
   return obstacle;
 }
 
+async function makeFish(x = 0, y = 0, z = FISH_HOLE_Z) {
+  const fishLogic = new Fish(x, y, z);
+  const fishModel = await createFishModel();
+  const fish = new Entity(fishLogic, fishModel);
+  const { length, heigth, depth } = fish.logic.hitboxDim;
+  fish.setHitbox(length * 0.8, heigth * 0.8, depth * 0.8);
+  return fish;
+}
+
 export class Level {
   constructor(mainInput, finishDistance = 1000, options = {}) {
     this.mainInput = mainInput;
@@ -63,6 +76,7 @@ export class Level {
     this.ringBalance = 0;
     this.rings = [];
     this.ringLayouts = new Map();
+    this.bridgeFishLayouts = new Map();
     this.hitboxesVisible = false;
     this.scatterSequence = 0;
 
@@ -76,6 +90,7 @@ export class Level {
     this.nextSpawnX = 14;
     this.spawnedEntities = [];
     this.spawnPromise = null;
+    this.spawnBridgePromise = null;
     this.enemies = [];
     this.obstacles = [];
   }
@@ -100,13 +115,13 @@ export class Level {
   }
 
   async buildLevel() {
-    // terrain
+    // terreno
     this.startPosX = 0;
     this.finishX = this.startPosX + this.finishDistance;
     this.terrain   = new Terrain(this.startPosX);
     this.startPosY = this.terrain.getHeightAt(this.startPosX);
 
-    // entities
+    // entidades
     this.entities   = [];
     this.sonic      = await makeSonic((x) => {
       const height = this.terrain.getHeightAt(x);
@@ -127,12 +142,13 @@ export class Level {
       this.entities.push(enemy);
     }
 
-    // controllers
+    // controladores
     this.player = new PlayerController(this.sonic, this.mainInput);
     this.ringTemplate = await loadRingTemplate();
     this.syncRingChunks();
     if (this.spawnHazards) {
       await this.spawnAhead(this.startPosX);
+      await this.spawnBridgeFish();
       // O jogo desenha todas as entidades ao iniciar; só as futuras viram "added".
       this.spawnedEntities = [];
     }
@@ -282,6 +298,47 @@ export class Level {
     this.spawnedEntities.push(obstacle);
   }
 
+  spawnBridgeFish() {
+    if (!this.spawnHazards || this.finishX === null) return Promise.resolve();
+    if (this.spawnBridgePromise) return this.spawnBridgePromise;
+    this.spawnBridgePromise = this.fillBridgeFish()
+      .catch((error) => {
+        console.error('Falha ao gerar peixe da ponte:', error);
+      })
+      .finally(() => {
+        this.spawnBridgePromise = null;
+      });
+    return this.spawnBridgePromise;
+  }
+
+  async fillBridgeFish() {
+    const activeChunks = new Set(this.terrain.chunks.map((chunk) => chunk.initialX));
+    for (const x of this.bridgeFishLayouts.keys()) {
+      if (!activeChunks.has(x)) this.bridgeFishLayouts.delete(x);
+    }
+
+    for (const chunk of this.terrain.chunks) {
+      if (chunk.chunkTypeName !== 'bridge') continue;
+      if (this.bridgeFishLayouts.has(chunk.initialX)) continue;
+      this.bridgeFishLayouts.set(chunk.initialX, new Set());
+
+      for (const offset of FISH_HOLE_X) {
+        const x = chunk.initialX + offset;
+        if (x < this.startPosX || x >= this.finishX) continue;
+        const groundY = chunk.getHeightAtX(x);
+        const y = groundY - FISH.spawnDepth;
+        if (this.overlapsHazard(x, y, 0.8, 0.6) ||
+            this.overlapsStaticRing(x, y, 0.8, 0.6)) continue;
+
+        const enemy = await makeFish(x, y);
+        enemy.controller = new StaticController(enemy);
+        this.enemies.push(enemy);
+        this.entities.push(enemy);
+        this.spawnedEntities.push(enemy);
+      }
+    }
+  }
+
   removeHazard(entity) {
     this.enemies = this.enemies.filter((enemy) => enemy !== entity);
     this.obstacles = this.obstacles.filter((obstacle) => obstacle !== entity);
@@ -335,6 +392,7 @@ export class Level {
     const playerX = this.sonic.logic.getPosition().x;
     const chunks = this.terrain.update(playerX);
     this.spawnAhead(playerX);
+    this.spawnBridgeFish();
     const ringChanges = this.syncRingChunks();
     for (const ring of this.rings) ring.update(dt);
     const finished = this.rings.filter((ring) => ring.logic.finished);
