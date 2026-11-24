@@ -2,9 +2,10 @@ import * as THREE from 'three';
 import { Game } from './game/Game.js';
 import { Input } from './game/logic/Input.js';
 import { CONFIG } from './game/constants.js';
-import { formatHudSpeed, formatHudTime, formatTime } from './ui/hudFormat.js';
+import { formatHudSpeed, formatHudTime, formatScore, formatTime } from './ui/hudFormat.js';
 
 const canvas = document.getElementById('canvas');
+const hudScore = document.getElementById('hud-score');
 const hudDistance = document.getElementById('hud-distance');
 const hudSpeed = document.getElementById('hud-speed');
 const hudRings = document.getElementById('hud-rings');
@@ -106,6 +107,11 @@ function renderLose(distance) {
       <p class="panel-subtitle">Você ficou sem anéis. Colete mais na próxima tentativa e use o giro para abrir caminho.</p>
 
       <div class="results">
+        <div class="result-card score">
+          <span>Pontos</span>
+          <strong>${formatScore(game.getScore())}</strong>
+          <small>sem bônus de tempo</small>
+        </div>
         <div class="result-card">
           <span>Distância</span>
           <strong>${distance} m</strong>
@@ -136,9 +142,14 @@ function renderWin(distance) {
     <section class="overlay-panel" role="dialog" aria-modal="true" aria-labelledby="overlay-title">
       <p class="eyebrow">Objetivo concluído</p>
       <h1 class="panel-title" id="overlay-title">Fase concluída!</h1>
-      <p class="panel-subtitle">Você cruzou a linha de chegada. Confira o desempenho e tente melhorar sua nota.</p>
+      <p class="panel-subtitle">Você cruzou a linha de chegada. Confira sua pontuação e tente superá-la.</p>
 
       <div class="results">
+        <div class="result-card score">
+          <span>Pontos</span>
+          <strong>${formatScore(results.score)}</strong>
+          <small>inclui ${formatScore(results.timeBonus)} de bônus de tempo</small>
+        </div>
         <div class="result-card">
           <span>Distância</span>
           <strong>${distance} m</strong>
@@ -172,6 +183,7 @@ function setHudText(element, text) {
 }
 
 function updateHud(distance, speed) {
+  setHudText(hudScore, formatScore(game.getScore()));
   setHudText(hudDistance, distance);
   setHudText(hudSpeed, formatHudSpeed(speed));
   setHudText(hudRings, game.level?.ringBalance ?? 0);

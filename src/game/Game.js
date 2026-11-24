@@ -1,7 +1,8 @@
 import { Level } from "./Level.js";
 import { SceneView } from "./rendering/SceneView.js";
 import { AudioManager } from "./audio/AudioManager.js";
-import { CONFIG } from "./constants.js";
+import { CONFIG, SCORE } from "./constants.js";
+import { gradeForScore } from "./logic/Score.js";
 
 export class Game {
   constructor(canvas, input) {
@@ -65,19 +66,29 @@ export class Game {
     return this.elapsedTime;
   }
 
+  getScore() {
+    return this.level?.score?.points ?? 0;
+  }
+
   getResults() {
     const rings = this.level?.ringsCollected ?? 0;
     const time = this.elapsedTime;
     const ringsPerMinute = time > 0 ? rings / (time / 60) : 0;
-    let grade = 'F';
-    if (ringsPerMinute >= 60) grade = 'A';
-    else if (ringsPerMinute >= 50) grade = 'B';
-    else if (ringsPerMinute >= 40) grade = 'C';
-    else if (ringsPerMinute >= 25) grade = 'D';
-    else if (ringsPerMinute >= 15) grade = 'E';
-    else if (ringsPerMinute >= 9) grade = 'F';
+    const score = this.level?.score;
+    // Sem score (partidas de teste), os anéis ainda dão a pontuação base.
+    const points = score
+      ? (this.state === 'win' ? score.finish(time) : score.points)
+      : rings * SCORE.ring;
+    const grade = gradeForScore(points);
 
-    return { rings, time, grade, ringsPerMinute };
+    return {
+      rings,
+      time,
+      grade,
+      ringsPerMinute,
+      score: points,
+      timeBonus: score?.timeBonus ?? 0,
+    };
   }
 
   getDistance() {
