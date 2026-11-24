@@ -5,6 +5,7 @@ export class Terrain {
     "flat":      chunkStrategies.flat,
     "ramp_up":   chunkStrategies.rampUp,
     "ramp_down": chunkStrategies.rampDown,
+    "bridge":    chunkStrategies.bridge,
   }
   static INITIAL_CHUNKS = 8;
   // Mantém três chunks atrás do jogador para permitir voltar na fase.
@@ -53,16 +54,7 @@ export class Terrain {
     let baseY        = lastChunk.endY;
     let surfaceStart = lastChunk.surfaceEnd;
 
-    const getRandomIndex = (ceil) => {
-      return Math.floor(Math.random() * ceil);
-    }
-
-    const randomChunkType = () => {
-      const keysArray = Object.keys(Terrain.CHUNK_TYPES);
-      const numKeys   = keysArray.length;
-
-      return keysArray[getRandomIndex(numKeys)];
-    }
+    const randomChunkType = () => this._randomChunkType(baseY);
 
     const chunk = new Chunk(
       startX,
@@ -77,6 +69,17 @@ export class Terrain {
 
   _destroyFirstChunk() {
     this.chunks.shift();
+  }
+
+  _randomChunkType(baseY) {
+    let candidates = Object.keys(Terrain.CHUNK_TYPES);
+    if (baseY > 4) {
+      candidates = candidates.filter((key) => key === 'flat' || key === 'ramp_down' || key === 'bridge');
+    } else if (baseY < -4) {
+      candidates = candidates.filter((key) => key === 'flat' || key === 'ramp_up' || key === 'bridge');
+    }
+    if (candidates.length === 0) candidates = Object.keys(Terrain.CHUNK_TYPES);
+    return candidates[Math.floor(Math.random() * candidates.length)];
   }
 
   getHeightAt(x) {

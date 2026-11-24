@@ -28,6 +28,16 @@ test('chunks keep height and texture distance continuous across ramps', () => {
   assert.ok(Math.abs(up.surfaceEnd - up.surfaceStart - Math.hypot(Chunk.length, 2)) < 1e-12);
 });
 
+test('chunks expõem o tipo e mantêm a inclinação calibrada', () => {
+  const flat = new Chunk(0, chunkStrategies.flat, 0);
+  const bridge = new Chunk(0, chunkStrategies.bridge, 0);
+  assert.equal(flat.chunkTypeName, 'flat');
+  assert.equal(bridge.chunkTypeName, 'bridge');
+
+  const ramp = new Chunk(0, chunkStrategies.rampUp, 0);
+  assert.ok(Math.abs(ramp.endY - 4) < 0.1, `rampa sobe ${ramp.endY} em vez de ~4`);
+});
+
 test('terrain and visuals keep chunks behind and ahead when recycling', () => {
   let canvases = 0;
   const createElement = globalThis.document.createElement;
@@ -47,7 +57,7 @@ test('terrain and visuals keep chunks behind and ahead when recycling', () => {
   first.model.geometry.addEventListener('dispose', () => disposed++);
   for (const material of first.materials) {
     material.addEventListener('dispose', () => disposed++);
-    material.map.addEventListener('dispose', () => disposed++);
+    material.map?.addEventListener('dispose', () => disposed++);
   }
 
   const added = terrain.update(150);
@@ -72,8 +82,18 @@ test('terrain and visuals keep chunks behind and ahead when recycling', () => {
   const cliff = visual.startCliff.getModel();
   assert.equal(cliff.position.x, terrain.chunks[0].initialX);
   assert.equal(cliff.position.y, terrain.chunks[0].getHeightAtX(terrain.chunks[0].initialX));
-  assert.equal(visual.chunkModels[0].materials[0], visual.chunkModels[7].materials[0]);
-  assert.equal(visual.chunkModels[0].materials[1].map, visual.chunkModels[7].materials[1].map);
+  // Materiais são compartilhados por tipo de chunk (chunks de ponte usam sua própria madeira).
+  const referenceByType = new Map();
+  for (const model of visual.chunkModels) {
+    const key = model.chunk.chunkTypeName;
+    if (!referenceByType.has(key)) referenceByType.set(key, model);
+    const reference = referenceByType.get(key);
+    assert.equal(model.materials.length, reference.materials.length);
+    for (let i = 0; i < reference.materials.length; i++) {
+      assert.equal(model.materials[i], reference.materials[i]);
+      assert.equal(model.materials[i].map, reference.materials[i].map);
+    }
+  }
   for (let i = 0; i < 8; i++) {
     assert.equal(visual.chunkModels[i].chunk, terrain.chunks[i]);
     if (i > 0) {

@@ -1,0 +1,11 @@
+Model Information:
+* title:	Sonic Generations - Chopper
+* source:	https://sketchfab.com/3d-models/sonic-generations-chopper-9fc0519412de4433807010ba5912d70f
+* author:	lavareefescape (https://sketchfab.com/lavareefescape)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Sonic Generations - Chopper" (https://sketchfab.com/3d-models/sonic-generations-chopper-9fc0519412de4433807010ba5912d70f) by lavareefescape (https://sketchfab.com/lavareefescape) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
